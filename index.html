@@ -257,7 +257,7 @@ dialog::backdrop { background: rgba(10,12,18,.45); }
   .nav a[aria-current="page"] span { display: inline; }
   main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 40px; }
   .head h1 { font-size: 24px; }
-  .kpis, .kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis, .kpis.four, .kpis:not(.four) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fields { grid-template-columns: minmax(0, 1fr); }
   .qrow { grid-template-columns: minmax(0, 1fr) 72px 32px; }
   .qrow .num { display: none; }
