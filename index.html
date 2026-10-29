@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -297,8 +299,11 @@ const eur2 = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR"
 const qty = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 });
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-const fmtDate = iso => { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${+d} ${MONTHS[+m - 1]} ${y}`; };
-const fmtDay = iso => { if (!iso) return "—"; const [, m, d] = iso.split("-"); return `${+d} ${MONTHS[+m - 1]}`; };
+const isISO = iso => typeof iso === "string" && /^\d{4}-(0[1-9]|1[0-2])-\d{2}$/.test(iso);
+const fmtDate = iso => { if (!isISO(iso)) return "—"; const [y, m, d] = iso.split("-"); return `${+d} ${MONTHS[+m - 1]} ${y}`; };
+const fmtDay = iso => { if (!isISO(iso)) return "—"; const [, m, d] = iso.split("-"); return `${+d} ${MONTHS[+m - 1]}`; };
+const dstage = s => DSTAGE[s] || DEAL_STAGES[0];
+const ostage = s => OSTAGE[s] || ORDER_STAGES[0];
 const daysUntil = iso => Math.round((new Date(iso + "T00:00:00") - new Date(todayISO() + "T00:00:00")) / 86400000);
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 const all = col => [...state[col]].map(([id, d]) => ({ id, ...d }));
@@ -401,8 +406,8 @@ function dbStore(db) {
 function localStore() {
   let data = null;
   try { data = JSON.parse(localStorage.getItem("bottega-crm") || "null"); } catch (e) {}
-  if (!data) data = JSON.parse(JSON.stringify(DEMO));
-  COLS.forEach(c => { data[c] = data[c] || {}; });
+  if (!data || typeof data !== "object" || Array.isArray(data)) data = JSON.parse(JSON.stringify(DEMO));
+  COLS.forEach(c => { if (!data[c] || typeof data[c] !== "object") data[c] = {}; });
   const save = () => { try { localStorage.setItem("bottega-crm", JSON.stringify(data)); } catch (e) {} };
   const emit = col => { state[col] = new Map(Object.entries(data[col])); loaded.add(col); render(); };
   return {
@@ -473,7 +478,7 @@ function metrics() {
   const balances = orders.filter(o => !o.settled).reduce((s, o) => s + orderEconomics(o).due, 0);
   return {
     openValue: open.reduce((s, d) => s + n(d.value), 0), openCount: open.length,
-    weighted: open.reduce((s, d) => s + n(d.value) * DSTAGE[d.stage].p, 0),
+    weighted: open.reduce((s, d) => s + n(d.value) * dstage(d.stage).p, 0),
     activeCount: active.length, activeValue: active.reduce((s, o) => s + n(o.price), 0),
     balance: inc - out, receivable: invoices + balances,
     avgMargin: totPrice ? totMargin / totPrice : null, deliveredCount: delivered.length,
@@ -527,7 +532,7 @@ function viewOverview() {
       ${deliveries.length ? `<div class="list">${deliveries.map(o => {
         const d = daysUntil(o.dueDate);
         const pill = d < 0 ? `<span class="pill neg">in ritardo di ${-d} g</span>` : d === 0 ? `<span class="pill warn">oggi</span>` : d <= 7 ? `<span class="pill warn">tra ${d} g</span>` : `<span class="pill mut">tra ${d} g</span>`;
-        return `<div class="row" data-edit="orders" data-id="${o.id}"><div><div class="t">${esc(o.title)}</div><div class="m">${esc(contactName(o.contactId) || "Senza cliente")} · ${OSTAGE[o.stage].label}</div></div><div class="r">${pill}<span class="m">${fmtDay(o.dueDate)}</span></div></div>`;
+        return `<div class="row" data-edit="orders" data-id="${esc(o.id)}"><div><div class="t">${esc(o.title)}</div><div class="m">${esc(contactName(o.contactId) || "Senza cliente")} · ${ostage(o.stage).label}</div></div><div class="r">${pill}<span class="m">${fmtDay(o.dueDate)}</span></div></div>`;
       }).join("")}</div>` : `<p class="none">Nessuna consegna nelle prossime tre settimane.</p>`}
     </section>
   </div>
@@ -535,12 +540,12 @@ function viewOverview() {
     <section class="panel">
       <div class="panel-h"><h2>Da ricontattare</h2><a href="#clienti" class="more">Clienti →</a></div>
       <p class="hint">Ricorrenze vicine e clienti che non tornano da ${Math.round(cfg().recontactDays / 30)} mesi.</p>
-      ${alerts.length ? `<div class="list">${alerts.map(a => `<div class="row" data-edit="contacts" data-id="${a.c.id}"><div><div class="t">${esc(a.c.name)}</div><div class="m">${esc(a.c.phone || a.c.email || "nessun recapito")}</div></div><div class="r"><span class="pill ${a.cls}">${esc(a.why)}</span></div></div>`).join("")}</div>` : `<p class="none">Nessuno da sentire in questo momento.</p>`}
+      ${alerts.length ? `<div class="list">${alerts.map(a => `<div class="row" data-edit="contacts" data-id="${esc(a.c.id)}"><div><div class="t">${esc(a.c.name)}</div><div class="m">${esc(a.c.phone || a.c.email || "nessun recapito")}</div></div><div class="r"><span class="pill ${a.cls}">${esc(a.why)}</span></div></div>`).join("")}</div>` : `<p class="none">Nessuno da sentire in questo momento.</p>`}
     </section>
     <section class="panel">
       <div class="panel-h"><h2>Da riordinare</h2><a href="#magazzino" class="more">Magazzino →</a></div>
       <p class="hint">Materiali sotto la scorta minima.</p>
-      ${low.length ? `<div class="list">${low.map(mt => `<div class="row" data-edit="materials" data-id="${mt.id}"><div><div class="t">${esc(mt.name)}</div><div class="m">${esc(mt.supplier || "fornitore non indicato")}</div></div><div class="r"><span class="num neg-t">${qty.format(n(mt.qty))} ${esc(mt.unit)}</span><span class="m">min ${qty.format(n(mt.minQty))}</span></div></div>`).join("")}</div>` : `<p class="none">Scorte a posto.</p>`}
+      ${low.length ? `<div class="list">${low.map(mt => `<div class="row" data-edit="materials" data-id="${esc(mt.id)}"><div><div class="t">${esc(mt.name)}</div><div class="m">${esc(mt.supplier || "fornitore non indicato")}</div></div><div class="r"><span class="num neg-t">${qty.format(n(mt.qty))} ${esc(mt.unit)}</span><span class="m">min ${qty.format(n(mt.minQty))}</span></div></div>`).join("")}</div>` : `<p class="none">Scorte a posto.</p>`}
     </section>
     <section class="panel">
       <div class="panel-h"><h2>Ultimi movimenti</h2><a href="#cassa" class="more">Cassa →</a></div>
@@ -550,7 +555,7 @@ function viewOverview() {
 }
 function txRow(t) {
   const cls = t.type === "entrata" ? "pos-t" : "neg-t";
-  return `<div class="row" data-edit="transactions" data-id="${t.id}"><div><div class="t">${esc(t.description)}</div><div class="m">${fmtDay(t.date)} · ${esc(t.category || "Altro")}</div></div><div class="r"><span class="num ${cls}">${t.type === "entrata" ? "+" : "−"}${eur.format(n(t.amount))}</span>${t.status === "pagato" ? "" : `<span class="pill warn">in attesa</span>`}</div></div>`;
+  return `<div class="row" data-edit="transactions" data-id="${esc(t.id)}"><div><div class="t">${esc(t.description)}</div><div class="m">${fmtDay(t.date)} · ${esc(t.category || "Altro")}</div></div><div class="r"><span class="num ${cls}">${t.type === "entrata" ? "+" : "−"}${eur.format(n(t.amount))}</span>${t.status === "pagato" ? "" : `<span class="pill warn">in attesa</span>`}</div></div>`;
 }
 function barChart(series) {
   const W = 560, H = 220, L = 52, B = 26, T = 10, R = 8;
@@ -578,12 +583,12 @@ function viewDeals() {
   <div class="board-wrap"><div class="board" data-board="deals">${DEAL_STAGES.map(s => {
     const items = deals.filter(d => d.stage === s.id).sort((a, b) => (a.closeDate || "9").localeCompare(b.closeDate || "9"));
     const sum = items.reduce((a, d) => a + n(d.value), 0);
-    return `<div class="col" data-stage="${s.id}">
+    return `<div class="col" data-stage="${esc(s.id)}">
       <div class="col-h"><div class="n">${s.label}<span>${items.length}</span></div><div class="sum num">${eur.format(sum)}${s.id !== "persa" && s.id !== "confermata" ? ` · prob. ${Math.round(s.p * 100)}%` : ""}</div></div>
       ${items.map(d => {
         const late = dealOpen(d) && d.closeDate && daysUntil(d.closeDate) < 0;
-        const toLab = d.stage === "confermata" && !d.orderId && canWrite ? `<button type="button" class="btn small" data-tolab="${d.id}">Porta in laboratorio →</button>` : d.orderId ? `<span class="pill pos">in laboratorio</span>` : "";
-        return `<div class="card" draggable="${canWrite}" data-edit="deals" data-id="${d.id}">
+        const toLab = d.stage === "confermata" && !d.orderId && canWrite ? `<button type="button" class="btn small" data-tolab="${esc(d.id)}">Porta in laboratorio →</button>` : d.orderId ? `<span class="pill pos">in laboratorio</span>` : "";
+        return `<div class="card" draggable="${canWrite}" data-edit="deals" data-id="${esc(d.id)}">
           <div class="t">${esc(d.title)}</div>
           <div class="m">${esc(contactName(d.contactId) || "Senza cliente")}${d.source ? " · " + esc(d.source) : ""}</div>
           <div class="f"><span class="num">${eur.format(n(d.value))}</span>${d.closeDate && dealOpen(d) ? `<span class="${late ? "pill neg" : "m"}">decide ${fmtDay(d.closeDate)}</span>` : ""}</div>
@@ -667,7 +672,7 @@ function viewOrders() {
   return head("Laboratorio", `Le commesse sul banco, dalle prime misure alla consegna. Segna le ore mentre lavori: il margine reale si aggiorna con la tua tariffa di ${eur.format(rate)}/h.`, addBtn("orders", "Commessa")) + exampleNotice() + `
   <div class="board-wrap"><div class="board" data-board="orders">${ORDER_STAGES.map(s => {
     const items = orders.filter(o => o.stage === s.id).sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9"));
-    return `<div class="col" data-stage="${s.id}">
+    return `<div class="col" data-stage="${esc(s.id)}">
       <div class="col-h"><div class="n">${s.label}<span>${items.length}</span></div><div class="sum num">${eur.format(items.reduce((a, o) => a + n(o.price), 0))}</div></div>
       ${items.map(o => {
         const e = orderEconomics(o);
@@ -675,12 +680,12 @@ function viewOrders() {
         const over = est && done > est;
         const d = o.dueDate ? daysUntil(o.dueDate) : null;
         const late = orderOpen(o) && o.stage !== "pronto" && d != null && d < 0;
-        const settle = (o.stage === "pronto" || o.stage === "consegnato") && !o.settled && e.due > 0 && canWrite ? `<button type="button" class="btn small" data-settle="${o.id}">Incassa saldo ${eur.format(e.due)}</button>` : "";
-        return `<div class="card" draggable="${canWrite}" data-edit="orders" data-id="${o.id}">
+        const settle = (o.stage === "pronto" || o.stage === "consegnato") && !o.settled && e.due > 0 && canWrite ? `<button type="button" class="btn small" data-settle="${esc(o.id)}">Incassa saldo ${eur.format(e.due)}</button>` : "";
+        return `<div class="card" draggable="${canWrite}" data-edit="orders" data-id="${esc(o.id)}">
           <div class="t">${esc(o.title)}</div>
           <div class="m">${esc(contactName(o.contactId) || "Senza cliente")}${o.dueDate ? ` · consegna ${fmtDay(o.dueDate)}` : ""}</div>
           ${late ? `<span class="pill neg">in ritardo di ${-d} g</span>` : ""}
-          <div class="f"><span class="m">ore ${qty.format(done)}${est ? ` / ${qty.format(est)}` : ""}</span>${canWrite && orderOpen(o) ? `<span class="stepper"><button type="button" class="btn small" data-hours="${o.id}" data-delta="1">+1 h</button></span>` : ""}</div>
+          <div class="f"><span class="m">ore ${qty.format(done)}${est ? ` / ${qty.format(est)}` : ""}</span>${canWrite && orderOpen(o) ? `<span class="stepper"><button type="button" class="btn small" data-hours="${esc(o.id)}" data-delta="1">+1 h</button></span>` : ""}</div>
           ${est ? `<div class="meter ${over ? "over" : ""}"><i style="width:${Math.min(100, done / est * 100)}%"></i></div>` : ""}
           <div class="f"><span class="num">${eur.format(n(o.price))}</span>${marginPill(e.pct)}</div>
           ${n(o.deposit) ? `<div class="m">acconto ${eur.format(n(o.deposit))}${o.settled ? " · saldato" : ` · resta ${eur.format(e.due)}`}</div>` : ""}
@@ -706,13 +711,13 @@ function viewMaterials() {
   </div>
   ${mats.length === 0 ? `<div class="empty"><b>Magazzino vuoto</b><span>Aggiungi legni, vernici, pelli, filati: tutto ciò che compri e trasformi. Il preventivatore userà questi costi.</span>${addBtn("materials", "Materiale")}</div>` : `
   <div class="table-wrap"><table><thead><tr><th>Materiale</th><th>Giacenza</th><th class="n">Costo unitario</th><th class="n">Valore</th><th>Fornitore</th>${canWrite ? "<th>Carico / scarico</th>" : ""}</tr></thead><tbody>
-    ${mats.map(m => { const isLow = n(m.qty) <= n(m.minQty); const pct = n(m.minQty) ? Math.min(100, n(m.qty) / (n(m.minQty) * 2) * 100) : 100; return `<tr data-edit="materials" data-id="${m.id}">
+    ${mats.map(m => { const isLow = n(m.qty) <= n(m.minQty); const pct = n(m.minQty) ? Math.min(100, n(m.qty) / (n(m.minQty) * 2) * 100) : 100; return `<tr data-edit="materials" data-id="${esc(m.id)}">
       <td><b>${esc(m.name)}</b>${isLow ? ` <span class="pill warn">da riordinare</span>` : ""}</td>
       <td><div class="stock"><span class="num ${isLow ? "neg-t" : ""}">${qty.format(n(m.qty))} ${esc(m.unit)}</span><div class="meter ${isLow ? "over" : ""}"><i style="width:${pct}%"></i></div></div><span class="sub">minimo ${qty.format(n(m.minQty))} ${esc(m.unit)}</span></td>
       <td class="n">${eur2.format(n(m.cost))}/${esc(m.unit)}</td>
       <td class="n">${eur.format(n(m.qty) * n(m.cost))}</td>
       <td>${esc(m.supplier || "—")}</td>
-      ${canWrite ? `<td><span class="stepper"><button type="button" class="btn small" data-stock="${m.id}" data-delta="-1" aria-label="Scarica 1">−1</button><button type="button" class="btn small" data-stock="${m.id}" data-delta="1" aria-label="Carica 1">+1</button></span></td>` : ""}
+      ${canWrite ? `<td><span class="stepper"><button type="button" class="btn small" data-stock="${esc(m.id)}" data-delta="-1" aria-label="Scarica 1">−1</button><button type="button" class="btn small" data-stock="${esc(m.id)}" data-delta="1" aria-label="Carica 1">+1</button></span></td>` : ""}
     </tr>`; }).join("")}
   </tbody></table></div>`}`;
 }
@@ -734,7 +739,7 @@ function viewContacts() {
         const spent = tx.filter(t => t.contactId === c.id && t.type === "entrata" && t.status === "pagato").reduce((s, t) => s + n(t.amount), 0);
         const lp = lastPurchase(c.id);
         const [lbl, cls] = CONTACT_STATUS[c.status] || CONTACT_STATUS.lead;
-        return `<tr data-edit="contacts" data-id="${c.id}"><td><b>${esc(c.name)}</b><span class="sub">${esc(c.city || "")}</span></td><td>${esc(c.phone || "—")}<span class="sub">${esc(c.email || "")}</span></td><td style="max-width:260px">${esc(c.prefs || "—")}</td><td><span class="pill ${cls}">${lbl}</span></td><td class="n">${nOrd || "—"}</td><td class="n">${spent ? eur.format(spent) : "—"}</td><td>${lp ? fmtDate(lp) : "—"}</td></tr>`;
+        return `<tr data-edit="contacts" data-id="${esc(c.id)}"><td><b>${esc(c.name)}</b><span class="sub">${esc(c.city || "")}</span></td><td>${esc(c.phone || "—")}<span class="sub">${esc(c.email || "")}</span></td><td style="max-width:260px">${esc(c.prefs || "—")}</td><td><span class="pill ${cls}">${lbl}</span></td><td class="n">${nOrd || "—"}</td><td class="n">${spent ? eur.format(spent) : "—"}</td><td>${lp ? fmtDate(lp) : "—"}</td></tr>`;
       }).join("") || `<tr><td colspan="7" class="muted">Nessun cliente corrisponde alla ricerca.</td></tr>`}
     </tbody></table></div>`;
   return head("Clienti", `${state.contacts.size} clienti in archivio. Gusti, misure e ricorrenze per accoglierli come se te li ricordassi tutti.`, addBtn("contacts", "Cliente")) + exampleNotice() + `
@@ -744,7 +749,7 @@ function viewContacts() {
 /* ---------- Cassa ---------- */
 function viewFinance() {
   const tx = all("transactions");
-  const monthsPresent = [...new Set(tx.map(t => (t.date || "").slice(0, 7)).filter(Boolean))].sort().reverse();
+  const monthsPresent = [...new Set(tx.filter(t => isISO(t.date)).map(t => t.date.slice(0, 7)))].sort().reverse();
   const list = tx.filter(t => ui.finMonth === "tutti" || (t.date || "").startsWith(ui.finMonth))
     .filter(t => ui.finType === "tutti" || (ui.finType === "attesa" ? t.status === "in attesa" : t.type === ui.finType))
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
@@ -767,13 +772,13 @@ function viewFinance() {
   </div>
   ${tx.length === 0 ? `<div class="empty"><b>Ancora nessun movimento</b><span>Registra vendite, acconti e spese per vedere il saldo della bottega.</span>${addBtn("transactions", "Movimento")}</div>` : `
   <div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrizione</th><th>Categoria</th><th>Stato</th><th class="n">Importo</th>${canWrite ? "<th></th>" : ""}</tr></thead><tbody>
-    ${list.map(t => `<tr data-edit="transactions" data-id="${t.id}">
+    ${list.map(t => `<tr data-edit="transactions" data-id="${esc(t.id)}">
       <td class="num">${fmtDate(t.date)}</td>
       <td><b>${esc(t.description)}</b><span class="sub">${esc(contactName(t.contactId))}</span></td>
       <td>${esc(t.category || "Altro")}</td>
       <td>${t.status === "pagato" ? `<span class="pill pos">${t.type === "entrata" ? "incassato" : "pagato"}</span>` : `<span class="pill warn">in attesa</span>`}</td>
       <td class="n ${t.type === "entrata" ? "pos-t" : "neg-t"}">${t.type === "entrata" ? "+" : "−"}${eur2.format(n(t.amount))}</td>
-      ${canWrite ? `<td>${t.status !== "pagato" ? `<button type="button" class="btn small" data-markpaid="${t.id}">Segna ${t.type === "entrata" ? "incassato" : "pagato"}</button>` : ""}</td>` : ""}
+      ${canWrite ? `<td>${t.status !== "pagato" ? `<button type="button" class="btn small" data-markpaid="${esc(t.id)}">Segna ${t.type === "entrata" ? "incassato" : "pagato"}</button>` : ""}</td>` : ""}
     </tr>`).join("") || `<tr><td colspan="6" class="muted">Nessun movimento con questi filtri.</td></tr>`}
   </tbody></table></div>`}`;
 }
@@ -880,8 +885,8 @@ function openForm(col, id, preset) {
   if (col === "contacts" && id) {
     const ds = all("deals").filter(d => d.contactId === id), os = all("orders").filter(o => o.contactId === id), ts = all("transactions").filter(t => t.contactId === id);
     if (ds.length || os.length || ts.length) related = `<div class="related"><span class="label">Storia con la bottega</span>
-      ${ds.map(d => `<div>Richiesta · ${esc(d.title)} · <span class="num">${eur.format(n(d.value))}</span> · ${DSTAGE[d.stage].label}</div>`).join("")}
-      ${os.map(o => `<div>Commessa · ${esc(o.title)} · <span class="num">${eur.format(n(o.price))}</span> · ${OSTAGE[o.stage].label}</div>`).join("")}
+      ${ds.map(d => `<div>Richiesta · ${esc(d.title)} · <span class="num">${eur.format(n(d.value))}</span> · ${dstage(d.stage).label}</div>`).join("")}
+      ${os.map(o => `<div>Commessa · ${esc(o.title)} · <span class="num">${eur.format(n(o.price))}</span> · ${ostage(o.stage).label}</div>`).join("")}
       ${ts.map(t => `<div>${fmtDay(t.date)} · ${esc(t.description)} · <span class="num">${t.type === "entrata" ? "+" : "−"}${eur.format(n(t.amount))}</span></div>`).join("")}</div>`;
   }
   if (col === "orders" && id) {
