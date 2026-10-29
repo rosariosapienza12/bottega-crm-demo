@@ -219,9 +219,24 @@ dialog::backdrop { background: rgba(10,12,18,.45); }
   .nav a[aria-current="page"] { border-left-color: transparent; border-radius: 8px; box-shadow: inset 0 -2px 0 var(--brass); }
   body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--side-bg); }
   .brand b, .side-foot, .nav-sep, .nav .badge { display: none; }
-  .brand { padding: 0; }
-  .nav { flex-direction: row; }
-  .nav a { padding: 8px 10px; white-space: nowrap; }
+  .brand { padding: 0; flex: none; }
+  .nav { flex-direction: row; flex: none; gap: 0; }
+  .nav a { padding: 8px 10px; white-space: nowrap; flex: none; }
+  .side { gap: 8px; scrollbar-width: none; }
+  .kpis > .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .row .r { max-width: 55%; }
+  .row .r .pill { white-space: normal; text-align: right; line-height: 1.3; }
+  .head > div:first-child { min-width: 0; }
+  .card .f { gap: 6px; }
+  .seg { width: 100%; }
+  .seg button { flex: 1 1 auto; padding: 7px 8px; }
+  .toolbar input, .toolbar select { max-width: none; width: 100%; flex: 1 1 100%; }
+  .dlg { padding: 16px; }
+  .dlg-foot .actions { width: 100%; justify-content: flex-end; }
+  .board { grid-template-columns: repeat(6, minmax(78vw, 1fr)); }
+  .board-wrap { scroll-snap-type: x mandatory; }
+  .col { scroll-snap-align: start; }
+  .receipt .big { font-size: 28px; }
   .nav a span { display: none; }
   .nav a[aria-current="page"] span { display: inline; }
   main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 40px; }
