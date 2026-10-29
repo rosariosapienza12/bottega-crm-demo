@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Bottega CRM</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: barra grafite a sinistra con le sette aree, piano di lavoro grigio chiaro a destra; azioni in viola, grafici e indicatori sfumati viola/grigio. Su telefono il banco diventa una barra in alto. */
+:root {
+  --bg: #F1F0F4; --surface: #FFFFFF; --sunken: #E6E4EC; --line: #D4D1DD;
+  --fg: #1C1A22; --muted: #63606E;
+  --accent: #5B3FA8; --accent-fg: #FFFFFF; --accent-soft: #ECE6FA;
+  --pos: #2D6B3F; --pos-soft: #DCEBDF;
+  --neg: #C0352B; --neg-soft: #F9E0DC;
+  --warn: #946300; --warn-soft: #F6EBCF;
+  --side-bg: #2B2833; --side-fg: #ECEAF2; --side-muted: #A39FB0; --side-hover: #3A3644; --side-active: #45385F; --brass: #C2AEF5;
+  --g-in-a: #A48BEB; --g-in-b: #4A2E96; --g-out-a: #C9C6D1; --g-out-b: #75717F;
+  --shadow: 0 1px 2px rgba(31,27,23,.06), 0 8px 24px rgba(31,27,23,.07);
+  --f-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --f-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141319; --surface: #1D1B24; --sunken: #0F0E13; --line: #312E3B;
+  --fg: #ECEAF2; --muted: #A19DAE;
+  --accent: #B39CF5; --accent-fg: #1C1233; --accent-soft: #2E2547;
+  --pos: #74C08A; --pos-soft: #1A2D1F;
+  --neg: #F28E80; --neg-soft: #3E1C17;
+  --warn: #E5B34F; --warn-soft: #382A12;
+  --side-bg: #0E0D12; --side-fg: #ECEAF2; --side-muted: #9B97A8; --side-hover: #1F1D27; --side-active: #2F2648; --brass: #C2AEF5;
+  --g-in-a: #CDBDF8; --g-in-b: #6E4FD0; --g-out-a: #9C98A8; --g-out-b: #4E4B58;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #141319; --surface: #1D1B24; --sunken: #0F0E13; --line: #312E3B;
+  --fg: #ECEAF2; --muted: #A19DAE;
+  --accent: #B39CF5; --accent-fg: #1C1233; --accent-soft: #2E2547;
+  --pos: #74C08A; --pos-soft: #1A2D1F;
+  --neg: #F28E80; --neg-soft: #3E1C17;
+  --warn: #E5B34F; --warn-soft: #382A12;
+  --side-bg: #0E0D12; --side-fg: #ECEAF2; --side-muted: #9B97A8; --side-hover: #1F1D27; --side-active: #2F2648; --brass: #C2AEF5;
+  --g-in-a: #CDBDF8; --g-in-b: #6E4FD0; --g-out-a: #9C98A8; --g-out-b: #4E4B58;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.45; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; margin: 0; letter-spacing: -0.005em; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+a.more { font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 600; }
+
+.app { display: grid; grid-template-columns: 224px minmax(0, 1fr); min-height: 100%; }
+.side { background: var(--side-bg); color: var(--side-fg); padding: 22px 14px; display: flex; flex-direction: column; gap: 24px; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; align-items: center; gap: 11px; padding: 0 8px; min-width: 0; }
+.brand-mark { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--brass); color: var(--brass); display: grid; place-items: center; font-family: var(--f-display); font-size: 17px; flex: none; }
+.brand b { font-family: var(--f-display); font-weight: 400; font-size: 17px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; }
+.brand small { display: block; font-family: var(--f-body); font-size: 10px; color: var(--side-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; margin-top: 2px; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-sep { height: 1px; background: var(--side-hover); margin: 8px 10px; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--side-muted); text-decoration: none; font-weight: 500; border-left: 2px solid transparent; }
+.nav a:hover { background: var(--side-hover); color: var(--side-fg); }
+.nav a[aria-current="page"] { background: var(--side-active); color: var(--side-fg); border-left-color: var(--brass); border-radius: 2px 8px 8px 2px; }
+.nav a[aria-current="page"] svg { color: var(--brass); }
+.nav svg { width: 18px; height: 18px; flex: none; }
+.nav .badge { margin-left: auto; font-size: 11px; font-family: var(--f-mono); background: var(--brass); color: var(--side-bg); border-radius: 999px; padding: 0 7px; font-style: normal; }
+.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 8px; font-size: 12px; color: var(--side-muted); }
+.side-foot .btn { background: transparent; color: var(--side-fg); border-color: var(--side-hover); }
+.side-foot .btn:hover { border-color: var(--brass); }
+.mode { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.dot.on { background: var(--pos); }
+
+main { min-width: 0; padding-block: 24px 48px; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 20px; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.head h1 { font-size: 30px; }
+.head p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--neg); }
+.btn.armed { background: var(--neg); color: var(--surface); border-color: var(--neg); }
+.btn.small { padding: 3px 9px; font-size: 12px; border-radius: 6px; }
+.btn.ghost { background: none; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--fg); background: var(--sunken); }
+
+.notice { background: var(--warn-soft); color: var(--warn); border-radius: 10px; padding: 10px 14px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.kpi .v { font-family: var(--f-display); font-size: 25px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.kpi .s { font-size: 12px; color: var(--muted); }
+
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.panel-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.panel-h h2 { font-size: 17px; }
+.panel .hint { font-size: 12px; color: var(--muted); margin: -4px 0 0; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+.chart .grid { stroke: var(--line); }
+
+.list { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); align-items: center; cursor: pointer; }
+.row:first-child { border-top: 0; }
+.row:hover .t { color: var(--accent); }
+.row .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .m { font-size: 12px; color: var(--muted); }
+.row .r { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.none { font-size: 13px; color: var(--muted); margin: 0; }
+
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+.pill.pos { background: var(--pos-soft); color: var(--pos); }
+.pill.neg { background: var(--neg-soft); color: var(--neg); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.acc { background: var(--accent-soft); color: var(--accent); }
+.pill.mut { background: var(--sunken); color: var(--muted); }
+.pos-t { color: var(--pos); } .neg-t { color: var(--neg); } .warn-t { color: var(--warn); }
+
+.board-wrap { overflow-x: auto; margin-inline: -4px; padding: 4px; }
+.board { display: grid; grid-template-columns: repeat(6, minmax(224px, 1fr)); gap: 12px; min-width: min-content; }
+.col { background: var(--sunken); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 260px; outline: 2px dashed transparent; outline-offset: -2px; transition: outline-color .15s; }
+.col.over { outline-color: var(--accent); }
+.col-h { display: flex; flex-direction: column; gap: 2px; padding: 2px 4px 6px; }
+.col-h .n { display: flex; justify-content: space-between; font-weight: 600; }
+.col-h .n span { color: var(--muted); font-weight: 500; }
+.col-h .sum { font-size: 12px; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: grab; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow); }
+.card:hover { border-color: var(--accent); }
+.card.drag { opacity: .4; }
+.card .t { font-weight: 600; }
+.card .m { font-size: 12px; color: var(--muted); }
+.card .f { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
+.meter { height: 5px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--g-in-a), var(--g-in-b)); border-radius: 3px; }
+.meter.over i { background: linear-gradient(90deg, var(--neg-soft), var(--neg)); }
+.legend i.g-in { background: linear-gradient(180deg, var(--g-in-a), var(--g-in-b)); }
+.legend i.g-out { background: linear-gradient(180deg, var(--g-out-a), var(--g-out-b)); }
+.chart .s-in-a { stop-color: var(--g-in-a); } .chart .s-in-b { stop-color: var(--g-in-b); }
+.chart .s-out-a { stop-color: var(--g-out-a); } .chart .s-out-b { stop-color: var(--g-out-b); }
+.kpi { background: linear-gradient(160deg, var(--surface) 55%, var(--accent-soft)); }
+.col-empty { font-size: 12px; color: var(--muted); padding: 8px 4px; }
+
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.toolbar input, .toolbar select { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 10px; }
+.toolbar input { min-width: 0; flex: 1 1 200px; max-width: 320px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); flex-wrap: wrap; }
+.seg button { border: 0; background: none; padding: 7px 12px; cursor: pointer; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; min-width: 680px; }
+th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: middle; }
+thead th { border-top: 0; background: var(--sunken); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tbody tr[data-edit] { cursor: pointer; }
+tbody tr[data-edit]:hover td { background: var(--bg); }
+td.n, th.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .sub { display: block; font-size: 12px; color: var(--muted); }
+.stock { display: flex; align-items: center; gap: 10px; }
+.stock .meter { width: 80px; flex: none; }
+.stepper { display: inline-flex; gap: 4px; }
+
+.quote { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.qrows { display: flex; flex-direction: column; gap: 8px; }
+.qrow { display: grid; grid-template-columns: minmax(0, 1fr) 92px 110px 32px; gap: 8px; align-items: center; }
+.qrow .num { text-align: right; font-size: 13px; }
+.receipt { position: sticky; top: 16px; }
+.receipt dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; margin: 0; }
+.receipt dt { color: var(--muted); }
+.receipt dd { margin: 0; text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.receipt .rule { grid-column: 1 / -1; border-top: 1px dashed var(--line); }
+.receipt .big { font-family: var(--f-display); font-size: 32px; font-weight: 400; color: var(--accent); }
+.receipt .strong { color: var(--fg); font-weight: 600; }
+
+.empty { border: 1px dashed var(--line); border-radius: 12px; padding: 28px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.empty b { color: var(--fg); font-family: var(--f-display); font-size: 17px; }
+
+dialog { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--fg); padding: 0; width: min(540px, calc(100vw - 32px)); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(10,12,18,.45); }
+.dlg { display: flex; flex-direction: column; gap: 14px; padding: 20px; max-height: calc(100vh - 64px); overflow-y: auto; }
+.dlg h2 { font-size: 20px; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
+.field textarea { min-height: 72px; resize: vertical; }
+.field .help { font-size: 11px; color: var(--muted); }
+.dlg-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.related { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 500; z-index: 50; max-width: calc(100vw - 32px); }
+
+@media (max-width: 1180px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .grid2, .grid3, .quote { grid-template-columns: minmax(0, 1fr); } .receipt { position: static; } }
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: sticky; top: env(safe-area-inset-top, 0px); height: auto; z-index: 5; flex-direction: row; align-items: center; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 12px; overflow-x: auto; }
+  .nav a[aria-current="page"] { border-left-color: transparent; border-radius: 8px; box-shadow: inset 0 -2px 0 var(--brass); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--side-bg); }
+  .brand b, .side-foot, .nav-sep, .nav .badge { display: none; }
+  .brand { padding: 0; }
+  .nav { flex-direction: row; }
+  .nav a { padding: 8px 10px; white-space: nowrap; }
+  .nav a span { display: none; }
+  .nav a[aria-current="page"] span { display: inline; }
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px 40px; }
+  .head h1 { font-size: 24px; }
+  .kpis, .kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fields { grid-template-columns: minmax(0, 1fr); }
+  .qrow { grid-template-columns: minmax(0, 1fr) 72px 32px; }
+  .qrow .num { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="brand-mark" id="brandMark">B</div><b><span id="brandName">La Bottega</span><small>registro di bottega</small></b></div>
+    <nav class="nav" id="nav">
+      <a href="#panoramica" data-view="panoramica"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Panoramica</span></a>
+      <div class="nav-sep"></div>
+      <a href="#richieste" data-view="richieste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg><span>Richieste</span></a>
+      <a href="#preventivi" data-view="preventivi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 7.5h7M8.5 11h2M13.5 11h2M8.5 14.5h2M13.5 14.5h2M8.5 18h7"/></svg><span>Preventivatore</span></a>
+      <a href="#laboratorio" data-view="laboratorio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 5.5l4 4M4 20l6.5-6.5M12.5 7.5l4 4-3 3-4-4z"/><path d="M15 3l6 6-2 2-6-6z"/></svg><span>Laboratorio</span><i class="badge" id="labBadge" hidden></i></a>
+      <a href="#magazzino" data-view="magazzino"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-5 9 5v11H3z"/><path d="M7 20v-7h10v7M7 16.5h10"/></svg><span>Magazzino</span><i class="badge" id="stockBadge" hidden></i></a>
+      <div class="nav-sep"></div>
+      <a href="#clienti" data-view="clienti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg><span>Clienti</span></a>
+      <a href="#cassa" data-view="cassa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16"/><path d="M8 15l4-4 3 3 5-6"/></svg><span>Cassa</span></a>
+    </nav>
+    <div class="side-foot">
+      <button type="button" class="btn small" data-settings="1">Impostazioni bottega</button>
+      <span class="mode"><i class="dot" id="modeDot"></i><span id="modeText">Connessione…</span></span>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<dialog id="dlg"><form class="dlg" id="dlgForm" method="dialog" novalidate></form></dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const COLS = ["contacts", "deals", "orders", "materials", "transactions", "settings"];
+const DATA_COLS = COLS.filter(c => c !== "settings");
+const DEAL_STAGES = [
+  { id: "nuova", label: "Nuova richiesta", p: 0.1 },
+  { id: "misure", label: "Misure e bozza", p: 0.25 },
+  { id: "preventivo", label: "Preventivo inviato", p: 0.5 },
+  { id: "trattativa", label: "In trattativa", p: 0.75 },
+  { id: "confermata", label: "Confermata", p: 1 },
+  { id: "persa", label: "Persa", p: 0 },
+];
+const ORDER_STAGES = [
+  { id: "coda", label: "In coda" },
+  { id: "progetto", label: "Progetto" },
+  { id: "lavorazione", label: "In lavorazione" },
+  { id: "rifinitura", label: "Rifinitura" },
+  { id: "pronto", label: "Pronto al ritiro" },
+  { id: "consegnato", label: "Consegnato" },
+];
+const STAGES = { deals: DEAL_STAGES, orders: ORDER_STAGES };
+const DSTAGE = Object.fromEntries(DEAL_STAGES.map(s => [s.id, s]));
+const OSTAGE = Object.fromEntries(ORDER_STAGES.map(s => [s.id, s]));
+const CONTACT_STATUS = { lead: ["Potenziale", "acc"], cliente: ["Cliente", "pos"], abituale: ["Abituale", "pos"], inattivo: ["Inattivo", "mut"] };
+const CATEGORIES = ["Vendite su misura", "Vendite in negozio", "Restauri", "Corsi e laboratori", "Materie prime", "Attrezzi", "Affitto", "Utenze", "Tasse e contributi", "Fiere e mercati", "Altro"];
+const MONTHS = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+const DEFAULTS = { name: "La Bottega", craft: "Falegnameria artigiana", rate: 35, overhead: 15, margin: 30, vat: 22, recontactDays: 150 };
+const VIEWS = { panoramica: "Panoramica", richieste: "Richieste", preventivi: "Preventivatore", laboratorio: "Laboratorio", magazzino: "Magazzino", clienti: "Clienti", cassa: "Cassa" };
+
+const state = Object.fromEntries(COLS.map(c => [c, new Map()]));
+const loaded = new Set();
+let store = null;
+let canWrite = true;
+let view = "panoramica";
+const ui = { contactQuery: "", contactStatus: "tutti", finMonth: "tutti", finType: "tutti", quote: null };
+
+const eur = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const eur2 = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const qty = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 });
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const fmtDate = iso => { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${+d} ${MONTHS[+m - 1]} ${y}`; };
+const fmtDay = iso => { if (!iso) return "—"; const [, m, d] = iso.split("-"); return `${+d} ${MONTHS[+m - 1]}`; };
+const daysUntil = iso => Math.round((new Date(iso + "T00:00:00") - new Date(todayISO() + "T00:00:00")) / 86400000);
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const all = col => [...state[col]].map(([id, d]) => ({ id, ...d }));
+const cfg = () => ({ ...DEFAULTS, ...(state.settings.get("bottega") || {}) });
+const contactName = id => { const c = id && state.contacts.get(id); return c ? c.name : ""; };
+const dealOpen = d => d.stage !== "confermata" && d.stage !== "persa";
+const orderOpen = o => o.stage !== "consegnato";
+const n = v => +v || 0;
+const cap = s => s[0].toUpperCase() + s.slice(1);
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+}
+
+/* ---------- Dati demo (falegnameria immaginaria) per chi apre la pagina senza account ---------- */
+const DEMO = (() => {
+  const c = (name, city, phone, email, status, source, prefs, specialLabel, special) => ({ name, city, phone, email, status, source, prefs, specialLabel: specialLabel || "", special: special || "" });
+  const m = (name, unit, cost, qty, minQty, supplier) => ({ name, unit, cost, qty, minQty, supplier });
+  const d = (title, contactId, value, stage, closeDate, source, hoursEst, extra) => ({ title, contactId, value, stage, closeDate, source, hoursEst, ...extra });
+  const o = (title, contactId, stage, price, deposit, dueDate, materialsCost, hoursEst, hoursDone, extra) => ({ title, contactId, stage, price, deposit, dueDate, materialsCost, hoursEst, hoursDone, ...extra });
+  const t = (description, type, amount, date, status, category, contactId) => ({ description, type, amount, date, status, category, contactId: contactId || "" });
+  return {
+    contacts: {
+      c1: c("Giulia Ferri", "Bologna", "333 418 2290", "giulia.ferri@example.it", "cliente", "Instagram", "Ama il noce canaletto e le finiture a olio, niente laccato. Parete soggiorno 4,20 m.", "Compleanno", "1990-11-08"),
+      c2: c("Marco Bellini", "Modena", "347 902 1136", "m.bellini@example.it", "abituale", "Passaparola", "Collezionista di mobili anni '50. Preferisce restauri conservativi."),
+      c3: c("Elena Rinaldi (Studio Rinaldi Architetti)", "Bologna", "051 644 7720", "studio@example.it", "cliente", "Architetto o arredatore", "Porta clienti di fascia alta. Vuole disegni esecutivi prima del preventivo."),
+      c4: c("Paolo e Sara Conti", "Casalecchio di Reno", "340 556 8812", "conti.famiglia@example.it", "lead", "Fiera / mercatino", "Cucina abitabile, tavolo per 8 persone. Due bambini piccoli: spigoli arrotondati.", "Anniversario di matrimonio", "2015-11-14"),
+      c5: c("Lucia Marchi", "Imola", "328 771 0453", "lucia.marchi@example.it", "cliente", "Vetrina", "Ingresso stretto (85 cm). Ama il rovere chiaro."),
+      c6: c("Davide Russo", "Bologna", "349 220 6614", "", "lead", "Sito web", "Credenza della nonna da restaurare, ha fretta per Natale."),
+    },
+    materials: {
+      m1: m("Tavole di noce canaletto", "m²", 95, 6, 8, "Legnami Venturi"),
+      m2: m("Rovere massello", "m²", 70, 14, 6, "Legnami Venturi"),
+      m3: m("Olio di lino cotto", "l", 12, 2, 3, "Colorificio Emiliano"),
+      m4: m("Cera d'api", "kg", 18, 4, 2, "Colorificio Emiliano"),
+      m5: m("Colla vinilica", "kg", 6.5, 5, 2, "Ferramenta Bassi"),
+      m6: m("Cerniere in ottone", "pz", 4.8, 40, 20, "Ferramenta Bassi"),
+      m7: m("Abete per strutture", "m²", 22, 18, 10, "Legnami Venturi"),
+    },
+    deals: {
+      d1: d("Libreria su misura per il soggiorno", "c1", 3200, "trattativa", "2026-11-10", "Instagram", 45),
+      d2: d("Tavolo da pranzo in rovere 200×100", "c4", 2400, "preventivo", "2026-11-20", "Fiera / mercatino", 32),
+      d3: d("Arredo reception dello studio", "c3", 6800, "misure", "2026-12-15", "Architetto o arredatore", 90),
+      d4: d("Restauro credenza anni '40", "c6", 650, "nuova", "2026-11-05", "Sito web", 0),
+      d5: d("Panca da ingresso in noce", "c5", 900, "confermata", "", "Vetrina", 14, { orderId: "o3" }),
+      d6: d("Coppia di comodini", "c2", 1100, "persa", "", "", 0, { notes: "Ha scelto un pezzo d'antiquariato." }),
+    },
+    orders: {
+      o1: o("Tavolo in noce 180×90", "c1", "lavorazione", 2800, 900, "2026-11-12", 620, 40, 26, { notes: "Gambe affusolate, piano spessore 4 cm, finitura a olio." }),
+      o2: o("Armadio a muro camera da letto", "c3", "rifinitura", 4200, 1500, "2026-10-27", 1100, 60, 64, { notes: "Nicchia 2,80 × 2,60 m, ante a battente." }),
+      o3: o("Panca da ingresso in noce", "c5", "coda", 900, 300, "2026-12-05", 210, 14, 0, { dealId: "d5" }),
+      o4: o("Restauro cassettone dell'800", "c5", "pronto", 750, 250, "2026-10-30", 60, 16, 15),
+      o5: o("Mensole sospese in noce", "c1", "consegnato", 480, 480, "2026-09-20", 90, 6, 7, { settled: true, paidBalance: 0 }),
+      o6: o("Scrivania in rovere", "c3", "consegnato", 1600, 600, "2026-08-28", 380, 22, 25, { settled: true, paidBalance: 1000 }),
+    },
+    transactions: Object.fromEntries([
+      t("Restauro 4 sedie impagliate", "entrata", 520, "2026-03-18", "pagato", "Restauri", "c2"),
+      t("Vendita taglieri in negozio", "entrata", 340, "2026-05-12", "pagato", "Vendite in negozio"),
+      ...["05", "06", "07", "08", "09", "10"].map((mm, i) => t(`Affitto laboratorio ${["maggio", "giugno", "luglio", "agosto", "settembre", "ottobre"][i]}`, "uscita", 650, `2026-${mm}-05`, "pagato", "Affitto")),
+      t("Noce canaletto, 12 m²", "uscita", 1200, "2026-06-04", "pagato", "Materie prime"),
+      t("Rovere massello, 13 m²", "uscita", 900, "2026-08-10", "pagato", "Materie prime"),
+      t("Oli, cere e abrasivi", "uscita", 180, "2026-10-03", "pagato", "Materie prime"),
+      t("Corso di intaglio, 6 iscritti", "entrata", 540, "2026-06-20", "pagato", "Corsi e laboratori"),
+      t("Vendite al mercatino dell'artigianato", "entrata", 780, "2026-07-15", "pagato", "Fiere e mercati"),
+      t("Acconto · Scrivania in rovere", "entrata", 600, "2026-07-10", "pagato", "Vendite su misura", "c3"),
+      t("Saldo · Scrivania in rovere", "entrata", 1000, "2026-08-28", "pagato", "Vendite su misura", "c3"),
+      t("Mensole sospese in noce", "entrata", 480, "2026-09-20", "pagato", "Vendite su misura", "c1"),
+      t("Acconto · Armadio a muro", "entrata", 1500, "2026-09-25", "pagato", "Vendite su misura", "c3"),
+      t("Acconto · Tavolo in noce", "entrata", 900, "2026-10-05", "pagato", "Vendite su misura", "c1"),
+      t("Acconto · Restauro cassettone", "entrata", 250, "2026-10-14", "pagato", "Restauri", "c5"),
+      t("Acconto · Panca da ingresso", "entrata", 300, "2026-10-18", "pagato", "Vendite su misura", "c5"),
+      t("Stand alla fiera dell'artigianato", "uscita", 350, "2026-09-15", "pagato", "Fiere e mercati"),
+      t("F24 contributi INPS artigiani", "uscita", 1150, "2026-10-16", "pagato", "Tasse e contributi"),
+      t("Fattura ferramenta Bassi", "uscita", 210, "2026-11-05", "in attesa", "Materie prime"),
+      t("Riparazione sedia da cucina", "entrata", 380, "2026-10-22", "in attesa", "Restauri", "c5"),
+    ].map((x, i) => [`t${String(i + 1).padStart(2, "0")}`, x])),
+    settings: {},
+  };
+})();
+
+/* ---------- Archiviazione ---------- */
+function dbStore(db) {
+  return {
+    mode: "db",
+    start() {
+      COLS.forEach(col => db.collection(col).onSnapshot(snap => {
+        state[col] = new Map(snap.docs.map(d => [d.id, d.data()]));
+        loaded.add(col); render();
+      }, () => toast("Connessione ai dati interrotta. Ricarica la pagina.")));
+    },
+    add: (col, data) => db.collection(col).add(data),
+    set: (col, id, data) => db.collection(col).doc(id).set(data),
+    update: (col, id, data) => db.collection(col).doc(id).update(data),
+    remove: (col, id) => db.collection(col).doc(id).delete(),
+  };
+}
+function localStore() {
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem("bottega-crm") || "null"); } catch (e) {}
+  if (!data) data = JSON.parse(JSON.stringify(DEMO));
+  COLS.forEach(c => { data[c] = data[c] || {}; });
+  const save = () => { try { localStorage.setItem("bottega-crm", JSON.stringify(data)); } catch (e) {} };
+  const emit = col => { state[col] = new Map(Object.entries(data[col])); loaded.add(col); render(); };
+  return {
+    mode: "local",
+    start() { COLS.forEach(emit); },
+    async add(col, d) { const id = uid(); data[col][id] = d; save(); emit(col); return { id }; },
+    async set(col, id, d) { data[col][id] = d; save(); emit(col); },
+    async update(col, id, d) { data[col][id] = { ...data[col][id], ...d }; save(); emit(col); },
+    async remove(col, id) { delete data[col][id]; save(); emit(col); },
+  };
+}
+async function write(fn, okMsg) {
+  if (!store) return false;
+  try { await fn(); if (okMsg) toast(okMsg); return true; }
+  catch (e) {
+    if (e && e.code === "invalid_argument") { canWrite = false; render(); toast("Non hai il permesso di modificare questi dati."); }
+    else if (e && e.code === "quota_exceeded") toast("Spazio esaurito: elimina qualche record e riprova.");
+    else toast("Salvataggio non riuscito. Riprova tra poco.");
+    return false;
+  }
+}
+
+/* ---------- Calcoli ---------- */
+function orderEconomics(o) {
+  const rate = cfg().rate;
+  const cost = n(o.materialsCost) + n(o.hoursDone) * rate;
+  const margin = n(o.price) - cost;
+  return { cost, margin, pct: n(o.price) ? margin / n(o.price) : null, due: Math.max(0, n(o.price) - n(o.deposit) - n(o.paidBalance)) };
+}
+function lowStock() { return all("materials").filter(m => n(m.qty) <= n(m.minQty)); }
+function lastPurchase(cid) {
+  const dates = [
+    ...all("transactions").filter(t => t.contactId === cid && t.type === "entrata").map(t => t.date),
+    ...all("orders").filter(o => o.contactId === cid).map(o => o.dueDate || (o.createdAt || "").slice(0, 10)),
+  ].filter(Boolean).sort();
+  return dates.length ? dates[dates.length - 1] : null;
+}
+function nextAnniversary(iso) {
+  if (!iso) return null;
+  const t = todayISO(), y = +t.slice(0, 4);
+  let cand = `${y}-${iso.slice(5)}`; if (cand < t) cand = `${y + 1}-${iso.slice(5)}`;
+  return daysUntil(cand);
+}
+function relationshipAlerts() {
+  const out = []; const lim = cfg().recontactDays;
+  for (const c of all("contacts")) {
+    if (c.status === "inattivo") continue;
+    const ann = nextAnniversary(c.special);
+    if (ann != null && ann <= 21) out.push({ c, sort: ann, why: ann === 0 ? `${c.specialLabel || "Ricorrenza"} oggi` : `${c.specialLabel || "Ricorrenza"} tra ${ann} g`, cls: "acc" });
+    if (c.status === "cliente" || c.status === "abituale") {
+      const lp = lastPurchase(c.id);
+      if (lp) { const ago = -daysUntil(lp); if (ago >= lim) out.push({ c, sort: 100 + (400 - Math.min(ago, 400)), why: `ultimo lavoro ${Math.round(ago / 30)} mesi fa`, cls: "warn" }); }
+    }
+  }
+  return out.sort((a, b) => a.sort - b.sort);
+}
+function metrics() {
+  const deals = all("deals"), tx = all("transactions"), orders = all("orders");
+  const open = deals.filter(dealOpen);
+  const paid = tx.filter(t => t.status === "pagato");
+  const inc = paid.filter(t => t.type === "entrata").reduce((s, t) => s + n(t.amount), 0);
+  const out = paid.filter(t => t.type === "uscita").reduce((s, t) => s + n(t.amount), 0);
+  const active = orders.filter(orderOpen);
+  const delivered = orders.filter(o => o.stage === "consegnato" && n(o.price) > 0);
+  const totPrice = delivered.reduce((s, o) => s + n(o.price), 0);
+  const totMargin = delivered.reduce((s, o) => s + orderEconomics(o).margin, 0);
+  const invoices = tx.filter(t => t.type === "entrata" && t.status === "in attesa").reduce((s, t) => s + n(t.amount), 0);
+  const balances = orders.filter(o => !o.settled).reduce((s, o) => s + orderEconomics(o).due, 0);
+  return {
+    openValue: open.reduce((s, d) => s + n(d.value), 0), openCount: open.length,
+    weighted: open.reduce((s, d) => s + n(d.value) * DSTAGE[d.stage].p, 0),
+    activeCount: active.length, activeValue: active.reduce((s, o) => s + n(o.price), 0),
+    balance: inc - out, receivable: invoices + balances,
+    avgMargin: totPrice ? totMargin / totPrice : null, deliveredCount: delivered.length,
+  };
+}
+function lastMonths(k) {
+  const out = []; const d = new Date();
+  for (let i = k - 1; i >= 0; i--) { const x = new Date(d.getFullYear(), d.getMonth() - i, 1); out.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}`); }
+  return out;
+}
+
+/* ---------- Pezzi comuni ---------- */
+function head(title, sub, buttons = "") {
+  return `<div class="head"><div><h1>${title}</h1><p>${sub}</p></div><div class="actions">${buttons}</div></div>`;
+}
+const addBtn = (col, label) => canWrite ? `<button type="button" class="btn primary" data-new="${col}">+ ${label}</button>` : "";
+const kpi = (l, v, s, cls = "") => `<div class="kpi"><span class="label">${l}</span><span class="v ${cls}">${v}</span><span class="s">${s}</span></div>`;
+function exampleNotice() { return ""; }
+function marginPill(pct) {
+  if (pct == null) return "";
+  const cls = pct < 0 ? "neg" : pct < 0.2 ? "warn" : "pos";
+  return `<span class="pill ${cls}">margine ${Math.round(pct * 100)}%</span>`;
+}
+
+/* ---------- Panoramica ---------- */
+function viewOverview() {
+  const m = metrics();
+  const series = lastMonths(6).map(k => {
+    const tx = all("transactions").filter(t => t.status === "pagato" && (t.date || "").startsWith(k));
+    return { k, inc: tx.filter(t => t.type === "entrata").reduce((s, t) => s + n(t.amount), 0), out: tx.filter(t => t.type === "uscita").reduce((s, t) => s + n(t.amount), 0) };
+  });
+  const deliveries = all("orders").filter(o => orderOpen(o) && o.dueDate && daysUntil(o.dueDate) <= 21).sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 6);
+  const alerts = relationshipAlerts().slice(0, 6);
+  const low = lowStock().slice(0, 6);
+  const recent = all("transactions").sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 5);
+  return head(`Buongiorno, ${esc(cfg().name)}`, "Cosa c'è sul banco, cosa consegnare e chi sentire questa settimana.", addBtn("deals", "Richiesta")) + exampleNotice() + `
+  <div class="kpis">
+    ${kpi("Richieste aperte", eur.format(m.openValue), `${m.openCount} in corso · ponderato ${eur.format(m.weighted)}`)}
+    ${kpi("In laboratorio", String(m.activeCount), `commesse attive · ${eur.format(m.activeValue)}`)}
+    ${kpi("Margine reale medio", m.avgMargin == null ? "—" : Math.round(m.avgMargin * 100) + "%", m.deliveredCount ? `su ${m.deliveredCount} lavori consegnati` : "compare dopo la prima consegna", m.avgMargin != null && m.avgMargin < 0.2 ? "warn-t" : "")}
+    ${kpi("Saldo di cassa", eur.format(m.balance), "incassi − spese pagate", m.balance < 0 ? "neg-t" : "")}
+    ${kpi("Da incassare", eur.format(m.receivable), "fatture aperte e saldi commesse")}
+  </div>
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-h"><h2>Incassi e spese, ultimi 6 mesi</h2><div class="legend"><span><i class="g-in"></i>Incassi</span><span><i class="g-out"></i>Spese</span></div></div>
+      <div class="chart">${barChart(series)}</div>
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Consegne in arrivo</h2><a href="#laboratorio" class="more">Laboratorio →</a></div>
+      ${deliveries.length ? `<div class="list">${deliveries.map(o => {
+        const d = daysUntil(o.dueDate);
+        const pill = d < 0 ? `<span class="pill neg">in ritardo di ${-d} g</span>` : d === 0 ? `<span class="pill warn">oggi</span>` : d <= 7 ? `<span class="pill warn">tra ${d} g</span>` : `<span class="pill mut">tra ${d} g</span>`;
+        return `<div class="row" data-edit="orders" data-id="${o.id}"><div><div class="t">${esc(o.title)}</div><div class="m">${esc(contactName(o.contactId) || "Senza cliente")} · ${OSTAGE[o.stage].label}</div></div><div class="r">${pill}<span class="m">${fmtDay(o.dueDate)}</span></div></div>`;
+      }).join("")}</div>` : `<p class="none">Nessuna consegna nelle prossime tre settimane.</p>`}
+    </section>
+  </div>
+  <div class="grid3">
+    <section class="panel">
+      <div class="panel-h"><h2>Da ricontattare</h2><a href="#clienti" class="more">Clienti →</a></div>
+      <p class="hint">Ricorrenze vicine e clienti che non tornano da ${Math.round(cfg().recontactDays / 30)} mesi.</p>
+      ${alerts.length ? `<div class="list">${alerts.map(a => `<div class="row" data-edit="contacts" data-id="${a.c.id}"><div><div class="t">${esc(a.c.name)}</div><div class="m">${esc(a.c.phone || a.c.email || "nessun recapito")}</div></div><div class="r"><span class="pill ${a.cls}">${esc(a.why)}</span></div></div>`).join("")}</div>` : `<p class="none">Nessuno da sentire in questo momento.</p>`}
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Da riordinare</h2><a href="#magazzino" class="more">Magazzino →</a></div>
+      <p class="hint">Materiali sotto la scorta minima.</p>
+      ${low.length ? `<div class="list">${low.map(mt => `<div class="row" data-edit="materials" data-id="${mt.id}"><div><div class="t">${esc(mt.name)}</div><div class="m">${esc(mt.supplier || "fornitore non indicato")}</div></div><div class="r"><span class="num neg-t">${qty.format(n(mt.qty))} ${esc(mt.unit)}</span><span class="m">min ${qty.format(n(mt.minQty))}</span></div></div>`).join("")}</div>` : `<p class="none">Scorte a posto.</p>`}
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Ultimi movimenti</h2><a href="#cassa" class="more">Cassa →</a></div>
+      ${recent.length ? `<div class="list">${recent.map(txRow).join("")}</div>` : `<p class="none">Ancora nessun movimento registrato.</p>`}
+    </section>
+  </div>`;
+}
+function txRow(t) {
+  const cls = t.type === "entrata" ? "pos-t" : "neg-t";
+  return `<div class="row" data-edit="transactions" data-id="${t.id}"><div><div class="t">${esc(t.description)}</div><div class="m">${fmtDay(t.date)} · ${esc(t.category || "Altro")}</div></div><div class="r"><span class="num ${cls}">${t.type === "entrata" ? "+" : "−"}${eur.format(n(t.amount))}</span>${t.status === "pagato" ? "" : `<span class="pill warn">in attesa</span>`}</div></div>`;
+}
+function barChart(series) {
+  const W = 560, H = 220, L = 52, B = 26, T = 10, R = 8;
+  const max = Math.max(1, ...series.flatMap(s => [s.inc, s.out]));
+  const step = niceStep(max / 4); const top = Math.ceil(max / step) * step;
+  const y = v => T + (H - T - B) * (1 - v / top);
+  const gw = (W - L - R) / series.length, bw = Math.min(22, gw * 0.3);
+  let g = `<defs><linearGradient id="gIn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="s-in-a"/><stop offset="1" class="s-in-b"/></linearGradient><linearGradient id="gOut" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="s-out-a"/><stop offset="1" class="s-out-b"/></linearGradient></defs>`;
+  for (let v = 0; v <= top + 1e-9; v += step) g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${compact(v)}</text>`;
+  series.forEach((s, i) => {
+    const cx = L + gw * i + gw / 2;
+    g += `<rect x="${cx - bw - 2}" y="${y(s.inc)}" width="${bw}" height="${y(0) - y(s.inc)}" rx="3" fill="url(#gIn)"><title>Incassi ${eur.format(s.inc)}</title></rect>`;
+    g += `<rect x="${cx + 2}" y="${y(s.out)}" width="${bw}" height="${y(0) - y(s.out)}" rx="3" fill="url(#gOut)"><title>Spese ${eur.format(s.out)}</title></rect>`;
+    g += `<text x="${cx}" y="${H - 8}" text-anchor="middle">${MONTHS[+s.k.slice(5) - 1]}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Incassi e spese mensili">${g}</svg>`;
+}
+function niceStep(x) { const p = Math.pow(10, Math.floor(Math.log10(x || 1))); const f = x / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
+function compact(v) { return v >= 1000 ? (v / 1000).toLocaleString("it-IT", { maximumFractionDigits: 1 }) + "k" : String(v); }
+
+/* ---------- Richieste ---------- */
+function viewDeals() {
+  const deals = all("deals");
+  return head("Richieste", canWrite ? "Dal primo contatto alla conferma. Trascina una scheda per cambiarne la fase; quando è confermata, portala in laboratorio." : "Le richieste dei clienti divise per fase.", addBtn("deals", "Richiesta")) + exampleNotice() + `
+  <div class="board-wrap"><div class="board" data-board="deals">${DEAL_STAGES.map(s => {
+    const items = deals.filter(d => d.stage === s.id).sort((a, b) => (a.closeDate || "9").localeCompare(b.closeDate || "9"));
+    const sum = items.reduce((a, d) => a + n(d.value), 0);
+    return `<div class="col" data-stage="${s.id}">
+      <div class="col-h"><div class="n">${s.label}<span>${items.length}</span></div><div class="sum num">${eur.format(sum)}${s.id !== "persa" && s.id !== "confermata" ? ` · prob. ${Math.round(s.p * 100)}%` : ""}</div></div>
+      ${items.map(d => {
+        const late = dealOpen(d) && d.closeDate && daysUntil(d.closeDate) < 0;
+        const toLab = d.stage === "confermata" && !d.orderId && canWrite ? `<button type="button" class="btn small" data-tolab="${d.id}">Porta in laboratorio →</button>` : d.orderId ? `<span class="pill pos">in laboratorio</span>` : "";
+        return `<div class="card" draggable="${canWrite}" data-edit="deals" data-id="${d.id}">
+          <div class="t">${esc(d.title)}</div>
+          <div class="m">${esc(contactName(d.contactId) || "Senza cliente")}${d.source ? " · " + esc(d.source) : ""}</div>
+          <div class="f"><span class="num">${eur.format(n(d.value))}</span>${d.closeDate && dealOpen(d) ? `<span class="${late ? "pill neg" : "m"}">decide ${fmtDay(d.closeDate)}</span>` : ""}</div>
+          ${toLab}
+        </div>`;
+      }).join("") || `<div class="col-empty">Nessuna richiesta</div>`}
+    </div>`;
+  }).join("")}</div></div>`;
+}
+
+/* ---------- Preventivatore ---------- */
+function freshQuote() {
+  const c = cfg();
+  return { title: "", contactId: "", rows: [{ mat: "", q: 1 }], extra: 0, hours: 8, rate: c.rate, overhead: c.overhead, margin: c.margin, vat: c.vat };
+}
+function quoteCalc(q) {
+  const mats = q.rows.reduce((s, r) => { const m = state.materials.get(r.mat); return s + (m ? n(m.cost) * n(r.q) : 0); }, 0) + n(q.extra);
+  const labour = n(q.hours) * n(q.rate);
+  const overhead = (mats + labour) * n(q.overhead) / 100;
+  const cost = mats + labour + overhead;
+  const net = cost * (1 + n(q.margin) / 100);
+  const vat = net * n(q.vat) / 100;
+  return { mats, labour, overhead, cost, profit: net - cost, net, vat, total: net + vat };
+}
+function viewQuote() {
+  if (!ui.quote) ui.quote = freshQuote();
+  const q = ui.quote;
+  const mats = all("materials").sort((a, b) => a.name.localeCompare(b.name, "it"));
+  const opt = (v, cur, l) => `<option value="${esc(v)}" ${String(v) === String(cur) ? "selected" : ""}>${esc(l)}</option>`;
+  const field = (id, label, val, extra = "", help = "") => `<div class="field"><label for="${id}">${label}</label><input id="${id}" data-q="${id.slice(2)}" type="number" min="0" step="0.5" inputmode="decimal" value="${esc(val)}" ${extra}>${help ? `<span class="help">${help}</span>` : ""}</div>`;
+  return head("Preventivatore", "Calcola il prezzo giusto di un pezzo su misura partendo da materiali, ore di banco e spese della bottega. Così sai prima quanto ci guadagni.", `<button type="button" class="btn" id="qReset">Ricomincia</button>`) + `
+  <div class="quote">
+    <section class="panel">
+      <div class="fields">
+        <div class="field wide"><label for="q_title">Lavoro</label><input id="q_title" data-q="title" type="text" placeholder="Es. tavolo da pranzo in noce 180×90" value="${esc(q.title)}"></div>
+        <div class="field wide"><label for="q_contactId">Cliente</label><select id="q_contactId" data-q="contactId">${contactOpts().map(([v, l]) => opt(v, q.contactId, l)).join("")}</select></div>
+      </div>
+      <div class="panel-h"><h2>Materiali</h2><span class="label">dal magazzino</span></div>
+      <div class="qrows">
+        ${q.rows.map((r, i) => { const m = state.materials.get(r.mat); return `<div class="qrow">
+          <select id="q_mat_${i}" data-qrow="${i}" data-k="mat" aria-label="Materiale"><option value="">— scegli materiale —</option>${mats.map(mt => opt(mt.id, r.mat, `${mt.name} (${eur2.format(n(mt.cost))}/${mt.unit})`)).join("")}</select>
+          <input id="q_q_${i}" data-qrow="${i}" data-k="q" type="number" min="0" step="0.1" inputmode="decimal" value="${esc(r.q)}" aria-label="Quantità">
+          <span class="num" id="q_line_${i}">${m ? eur2.format(n(m.cost) * n(r.q)) : "—"}</span>
+          <button type="button" class="btn ghost small" data-qdel="${i}" aria-label="Togli riga">✕</button>
+        </div>`; }).join("")}
+        <div><button type="button" class="btn small" id="qAdd">+ Aggiungi materiale</button></div>
+      </div>
+      <div class="fields">
+        ${field("q_extra", "Altri materiali e ferramenta (€)", q.extra, "", "Quello che non tieni a magazzino.")}
+        ${field("q_hours", "Ore di banco stimate", q.hours)}
+        ${field("q_rate", "Tariffa oraria (€)", q.rate)}
+        ${field("q_overhead", "Spese di bottega (%)", q.overhead, "", "Affitto, corrente, usura attrezzi.")}
+        ${field("q_margin", "Margine (%)", q.margin)}
+        ${field("q_vat", "IVA (%)", q.vat)}
+      </div>
+    </section>
+    <section class="panel receipt" id="receipt">${receiptHTML()}</section>
+  </div>`;
+}
+function receiptHTML() {
+  const r = quoteCalc(ui.quote);
+  return `<div class="panel-h"><h2>Prezzo consigliato</h2><span class="label">IVA inclusa</span></div>
+    <div class="big num">${eur2.format(r.total)}</div>
+    <dl>
+      <dt>Materiali</dt><dd>${eur2.format(r.mats)}</dd>
+      <dt>Manodopera</dt><dd>${eur2.format(r.labour)}</dd>
+      <dt>Spese di bottega</dt><dd>${eur2.format(r.overhead)}</dd>
+      <div class="rule"></div>
+      <dt class="strong">Costo pieno</dt><dd class="strong">${eur2.format(r.cost)}</dd>
+      <dt>Guadagno</dt><dd class="pos-t">+${eur2.format(r.profit)}</dd>
+      <dt class="strong">Prezzo netto</dt><dd class="strong">${eur2.format(r.net)}</dd>
+      <dt>IVA</dt><dd>${eur2.format(r.vat)}</dd>
+    </dl>
+    <p class="none">Sotto ${eur2.format(r.cost)} lavori in perdita: è il tuo prezzo minimo per trattare.</p>
+    ${canWrite ? `<div class="actions"><button type="button" class="btn primary" id="qSave">Crea richiesta con questo prezzo</button><button type="button" class="btn" id="qDefaults">Salva tariffe come predefinite</button></div>` : ""}`;
+}
+
+/* ---------- Laboratorio ---------- */
+function viewOrders() {
+  const orders = all("orders"); const rate = cfg().rate;
+  return head("Laboratorio", `Le commesse sul banco, dalle prime misure alla consegna. Segna le ore mentre lavori: il margine reale si aggiorna con la tua tariffa di ${eur.format(rate)}/h.`, addBtn("orders", "Commessa")) + exampleNotice() + `
+  <div class="board-wrap"><div class="board" data-board="orders">${ORDER_STAGES.map(s => {
+    const items = orders.filter(o => o.stage === s.id).sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9"));
+    return `<div class="col" data-stage="${s.id}">
+      <div class="col-h"><div class="n">${s.label}<span>${items.length}</span></div><div class="sum num">${eur.format(items.reduce((a, o) => a + n(o.price), 0))}</div></div>
+      ${items.map(o => {
+        const e = orderEconomics(o);
+        const est = n(o.hoursEst), done = n(o.hoursDone);
+        const over = est && done > est;
+        const d = o.dueDate ? daysUntil(o.dueDate) : null;
+        const late = orderOpen(o) && o.stage !== "pronto" && d != null && d < 0;
+        const settle = (o.stage === "pronto" || o.stage === "consegnato") && !o.settled && e.due > 0 && canWrite ? `<button type="button" class="btn small" data-settle="${o.id}">Incassa saldo ${eur.format(e.due)}</button>` : "";
+        return `<div class="card" draggable="${canWrite}" data-edit="orders" data-id="${o.id}">
+          <div class="t">${esc(o.title)}</div>
+          <div class="m">${esc(contactName(o.contactId) || "Senza cliente")}${o.dueDate ? ` · consegna ${fmtDay(o.dueDate)}` : ""}</div>
+          ${late ? `<span class="pill neg">in ritardo di ${-d} g</span>` : ""}
+          <div class="f"><span class="m">ore ${qty.format(done)}${est ? ` / ${qty.format(est)}` : ""}</span>${canWrite && orderOpen(o) ? `<span class="stepper"><button type="button" class="btn small" data-hours="${o.id}" data-delta="1">+1 h</button></span>` : ""}</div>
+          ${est ? `<div class="meter ${over ? "over" : ""}"><i style="width:${Math.min(100, done / est * 100)}%"></i></div>` : ""}
+          <div class="f"><span class="num">${eur.format(n(o.price))}</span>${marginPill(e.pct)}</div>
+          ${n(o.deposit) ? `<div class="m">acconto ${eur.format(n(o.deposit))}${o.settled ? " · saldato" : ` · resta ${eur.format(e.due)}`}</div>` : ""}
+          ${settle}
+        </div>`;
+      }).join("") || `<div class="col-empty">Nessuna commessa</div>`}
+    </div>`;
+  }).join("")}</div></div>`;
+}
+
+/* ---------- Magazzino ---------- */
+function viewMaterials() {
+  const mats = all("materials").sort((a, b) => (n(a.qty) <= n(a.minQty) ? 0 : 1) - (n(b.qty) <= n(b.minQty) ? 0 : 1) || a.name.localeCompare(b.name, "it"));
+  const value = mats.reduce((s, m) => s + n(m.qty) * n(m.cost), 0);
+  const low = mats.filter(m => n(m.qty) <= n(m.minQty));
+  const reorder = low.reduce((s, m) => s + Math.max(0, n(m.minQty) * 2 - n(m.qty)) * n(m.cost), 0);
+  return head("Magazzino", "Materie prime e scorte. Quando un materiale scende sotto il minimo compare tra quelli da riordinare.", addBtn("materials", "Materiale")) + exampleNotice() + `
+  <div class="kpis four">
+    ${kpi("Valore a magazzino", eur.format(value), `${mats.length} materiali`)}
+    ${kpi("Da riordinare", String(low.length), low.length ? "sotto la scorta minima" : "tutto sopra il minimo", low.length ? "warn-t" : "")}
+    ${kpi("Spesa di riordino", eur.format(reorder), "per tornare al doppio del minimo")}
+    ${kpi("Fornitori", String(new Set(mats.map(m => m.supplier).filter(Boolean)).size), "diversi")}
+  </div>
+  ${mats.length === 0 ? `<div class="empty"><b>Magazzino vuoto</b><span>Aggiungi legni, vernici, pelli, filati: tutto ciò che compri e trasformi. Il preventivatore userà questi costi.</span>${addBtn("materials", "Materiale")}</div>` : `
+  <div class="table-wrap"><table><thead><tr><th>Materiale</th><th>Giacenza</th><th class="n">Costo unitario</th><th class="n">Valore</th><th>Fornitore</th>${canWrite ? "<th>Carico / scarico</th>" : ""}</tr></thead><tbody>
+    ${mats.map(m => { const isLow = n(m.qty) <= n(m.minQty); const pct = n(m.minQty) ? Math.min(100, n(m.qty) / (n(m.minQty) * 2) * 100) : 100; return `<tr data-edit="materials" data-id="${m.id}">
+      <td><b>${esc(m.name)}</b>${isLow ? ` <span class="pill warn">da riordinare</span>` : ""}</td>
+      <td><div class="stock"><span class="num ${isLow ? "neg-t" : ""}">${qty.format(n(m.qty))} ${esc(m.unit)}</span><div class="meter ${isLow ? "over" : ""}"><i style="width:${pct}%"></i></div></div><span class="sub">minimo ${qty.format(n(m.minQty))} ${esc(m.unit)}</span></td>
+      <td class="n">${eur2.format(n(m.cost))}/${esc(m.unit)}</td>
+      <td class="n">${eur.format(n(m.qty) * n(m.cost))}</td>
+      <td>${esc(m.supplier || "—")}</td>
+      ${canWrite ? `<td><span class="stepper"><button type="button" class="btn small" data-stock="${m.id}" data-delta="-1" aria-label="Scarica 1">−1</button><button type="button" class="btn small" data-stock="${m.id}" data-delta="1" aria-label="Carica 1">+1</button></span></td>` : ""}
+    </tr>`; }).join("")}
+  </tbody></table></div>`}`;
+}
+
+/* ---------- Clienti ---------- */
+function viewContacts() {
+  const orders = all("orders"), tx = all("transactions");
+  const q = ui.contactQuery.trim().toLowerCase();
+  const list = all("contacts")
+    .filter(c => ui.contactStatus === "tutti" || c.status === ui.contactStatus)
+    .filter(c => !q || [c.name, c.email, c.phone, c.prefs, c.city].some(v => (v || "").toLowerCase().includes(q)))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || "", "it"));
+  const seg = ["tutti", ...Object.keys(CONTACT_STATUS)].map(k => `<button type="button" data-cstatus="${k}" aria-pressed="${ui.contactStatus === k}">${k === "tutti" ? "Tutti" : CONTACT_STATUS[k][0]}</button>`).join("");
+  const body = state.contacts.size === 0
+    ? `<div class="empty"><b>Ancora nessun cliente</b><span>Annota chi entra in bottega, cosa gli piace e le date che contano per lui.</span>${addBtn("contacts", "Cliente")}</div>`
+    : `<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Recapiti</th><th>Gusti e note</th><th>Stato</th><th class="n">Commesse</th><th class="n">Speso</th><th>Ultimo lavoro</th></tr></thead><tbody>
+      ${list.map(c => {
+        const nOrd = orders.filter(o => o.contactId === c.id).length;
+        const spent = tx.filter(t => t.contactId === c.id && t.type === "entrata" && t.status === "pagato").reduce((s, t) => s + n(t.amount), 0);
+        const lp = lastPurchase(c.id);
+        const [lbl, cls] = CONTACT_STATUS[c.status] || CONTACT_STATUS.lead;
+        return `<tr data-edit="contacts" data-id="${c.id}"><td><b>${esc(c.name)}</b><span class="sub">${esc(c.city || "")}</span></td><td>${esc(c.phone || "—")}<span class="sub">${esc(c.email || "")}</span></td><td style="max-width:260px">${esc(c.prefs || "—")}</td><td><span class="pill ${cls}">${lbl}</span></td><td class="n">${nOrd || "—"}</td><td class="n">${spent ? eur.format(spent) : "—"}</td><td>${lp ? fmtDate(lp) : "—"}</td></tr>`;
+      }).join("") || `<tr><td colspan="7" class="muted">Nessun cliente corrisponde alla ricerca.</td></tr>`}
+    </tbody></table></div>`;
+  return head("Clienti", `${state.contacts.size} clienti in archivio. Gusti, misure e ricorrenze per accoglierli come se te li ricordassi tutti.`, addBtn("contacts", "Cliente")) + exampleNotice() + `
+  <div class="toolbar"><input id="cq" type="search" placeholder="Cerca per nome, città, gusti…" value="${esc(ui.contactQuery)}" aria-label="Cerca clienti"><div class="seg">${seg}</div></div>${body}`;
+}
+
+/* ---------- Cassa ---------- */
+function viewFinance() {
+  const tx = all("transactions");
+  const monthsPresent = [...new Set(tx.map(t => (t.date || "").slice(0, 7)).filter(Boolean))].sort().reverse();
+  const list = tx.filter(t => ui.finMonth === "tutti" || (t.date || "").startsWith(ui.finMonth))
+    .filter(t => ui.finType === "tutti" || (ui.finType === "attesa" ? t.status === "in attesa" : t.type === ui.finType))
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const scope = tx.filter(t => ui.finMonth === "tutti" || (t.date || "").startsWith(ui.finMonth));
+  const sum = f => scope.filter(f).reduce((s, t) => s + n(t.amount), 0);
+  const inc = sum(t => t.type === "entrata" && t.status === "pagato"), out = sum(t => t.type === "uscita" && t.status === "pagato");
+  const rec = sum(t => t.type === "entrata" && t.status === "in attesa"), pay = sum(t => t.type === "uscita" && t.status === "in attesa");
+  const seg = [["tutti", "Tutti"], ["entrata", "Incassi"], ["uscita", "Spese"], ["attesa", "In attesa"]].map(([k, l]) => `<button type="button" data-ftype="${k}" aria-pressed="${ui.finType === k}">${l}</button>`).join("");
+  const period = ui.finMonth === "tutti" ? "tutto il periodo" : `${MONTHS[+ui.finMonth.slice(5) - 1]} ${ui.finMonth.slice(0, 4)}`;
+  return head("Cassa", `Incassi, spese e pagamenti in sospeso · ${period}.`, addBtn("transactions", "Movimento")) + exampleNotice() + `
+  <div class="kpis four">
+    ${kpi("Incassato", eur.format(inc), "pagamenti ricevuti", "pos-t")}
+    ${kpi("Speso", eur.format(out), "spese pagate", "neg-t")}
+    ${kpi("Saldo", eur.format(inc - out), "incassi − spese", inc - out < 0 ? "neg-t" : "")}
+    ${kpi("In sospeso", eur.format(rec - pay), `${eur.format(rec)} da ricevere · ${eur.format(pay)} da pagare`)}
+  </div>
+  <div class="toolbar">
+    <select id="fm" aria-label="Mese"><option value="tutti">Tutti i mesi</option>${monthsPresent.map(k => `<option value="${k}" ${ui.finMonth === k ? "selected" : ""}>${MONTHS[+k.slice(5) - 1]} ${k.slice(0, 4)}</option>`).join("")}</select>
+    <div class="seg">${seg}</div>
+  </div>
+  ${tx.length === 0 ? `<div class="empty"><b>Ancora nessun movimento</b><span>Registra vendite, acconti e spese per vedere il saldo della bottega.</span>${addBtn("transactions", "Movimento")}</div>` : `
+  <div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrizione</th><th>Categoria</th><th>Stato</th><th class="n">Importo</th>${canWrite ? "<th></th>" : ""}</tr></thead><tbody>
+    ${list.map(t => `<tr data-edit="transactions" data-id="${t.id}">
+      <td class="num">${fmtDate(t.date)}</td>
+      <td><b>${esc(t.description)}</b><span class="sub">${esc(contactName(t.contactId))}</span></td>
+      <td>${esc(t.category || "Altro")}</td>
+      <td>${t.status === "pagato" ? `<span class="pill pos">${t.type === "entrata" ? "incassato" : "pagato"}</span>` : `<span class="pill warn">in attesa</span>`}</td>
+      <td class="n ${t.type === "entrata" ? "pos-t" : "neg-t"}">${t.type === "entrata" ? "+" : "−"}${eur2.format(n(t.amount))}</td>
+      ${canWrite ? `<td>${t.status !== "pagato" ? `<button type="button" class="btn small" data-markpaid="${t.id}">Segna ${t.type === "entrata" ? "incassato" : "pagato"}</button>` : ""}</td>` : ""}
+    </tr>`).join("") || `<tr><td colspan="6" class="muted">Nessun movimento con questi filtri.</td></tr>`}
+  </tbody></table></div>`}`;
+}
+
+/* ---------- Render ---------- */
+function render() {
+  document.querySelectorAll("#nav a").forEach(a => { if (a.dataset.view === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  const c = cfg();
+  document.getElementById("brandName").textContent = c.name;
+  document.getElementById("brandMark").textContent = (c.name.replace(/^(la|il|lo|l')\s*/i, "")[0] || "B").toUpperCase();
+  const lb = document.getElementById("labBadge"), sb = document.getElementById("stockBadge");
+  const lateOrders = all("orders").filter(o => orderOpen(o) && o.stage !== "pronto" && o.dueDate && daysUntil(o.dueDate) < 0).length;
+  lb.hidden = !lateOrders; lb.textContent = lateOrders; lb.title = `${lateOrders} in ritardo`;
+  const low = lowStock().length; sb.hidden = !low; sb.textContent = low; sb.title = `${low} da riordinare`;
+  const main = document.getElementById("main");
+  if (loaded.size < COLS.length) {
+    main.innerHTML = head(VIEWS[view], "Apro il registro…") + `<div class="empty"><b>Sto aprendo il registro di bottega</b><span>Richieste, commesse, materiali, clienti e movimenti compariranno qui.</span></div>`;
+    return;
+  }
+  const ae = document.activeElement; const focusId = ae && ae.id && main.contains(ae) ? ae.id : null;
+  let caret = null; try { caret = focusId ? ae.selectionStart : null; } catch (e) {}
+  main.innerHTML = { panoramica: viewOverview, richieste: viewDeals, preventivi: viewQuote, laboratorio: viewOrders, magazzino: viewMaterials, clienti: viewContacts, cassa: viewFinance }[view]();
+  if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (caret != null) el.setSelectionRange(caret, caret); } catch (e) {} } }
+}
+
+/* ---------- Moduli ---------- */
+const SCHEMA = {
+  contacts: { title: "cliente", fields: [
+    { k: "name", l: "Nome e cognome", t: "text", req: true },
+    { k: "city", l: "Città", t: "text" },
+    { k: "phone", l: "Telefono", t: "tel" },
+    { k: "email", l: "Email", t: "email" },
+    { k: "status", l: "Stato", t: "select", opts: () => Object.entries(CONTACT_STATUS).map(([v, [l]]) => [v, l]), def: "lead" },
+    { k: "source", l: "Come ci ha conosciuto", t: "list", opts: () => ["Passaparola", "Vetrina", "Instagram", "Fiera / mercatino", "Sito web", "Architetto o arredatore"] },
+    { k: "specialLabel", l: "Ricorrenza", t: "list", opts: () => ["Compleanno", "Anniversario di matrimonio", "Inaugurazione casa", "Primo acquisto"], help: "Te la ricordo 3 settimane prima." },
+    { k: "special", l: "Data della ricorrenza", t: "date" },
+    { k: "prefs", l: "Gusti, misure e preferenze", t: "textarea", wide: true, help: "Essenze preferite, colori, misure di casa, allergie a finiture…" },
+  ] },
+  deals: { title: "richiesta", fields: [
+    { k: "title", l: "Cosa desidera", t: "text", req: true, wide: true },
+    { k: "contactId", l: "Cliente", t: "select", opts: contactOpts },
+    { k: "value", l: "Valore stimato (€)", t: "number", def: 0 },
+    { k: "stage", l: "Fase", t: "select", opts: () => DEAL_STAGES.map(s => [s.id, s.label]), def: "nuova" },
+    { k: "closeDate", l: "Decisione attesa entro", t: "date" },
+    { k: "source", l: "Canale", t: "list", opts: () => ["Passaparola", "Vetrina", "Instagram", "Fiera / mercatino", "Sito web", "Architetto o arredatore"] },
+    { k: "hoursEst", l: "Ore stimate", t: "number", def: 0 },
+    { k: "notes", l: "Note", t: "textarea", wide: true },
+  ] },
+  orders: { title: "commessa", fields: [
+    { k: "title", l: "Lavoro", t: "text", req: true, wide: true },
+    { k: "contactId", l: "Cliente", t: "select", opts: contactOpts },
+    { k: "stage", l: "Fase", t: "select", opts: () => ORDER_STAGES.map(s => [s.id, s.label]), def: "coda" },
+    { k: "price", l: "Prezzo pattuito (€)", t: "number", def: 0 },
+    { k: "deposit", l: "Acconto ricevuto (€)", t: "number", def: 0 },
+    { k: "dueDate", l: "Consegna promessa", t: "date" },
+    { k: "materialsCost", l: "Costo materiali (€)", t: "number", def: 0 },
+    { k: "hoursEst", l: "Ore stimate", t: "number", def: 0 },
+    { k: "hoursDone", l: "Ore lavorate", t: "number", def: 0 },
+    { k: "notes", l: "Misure e note di lavorazione", t: "textarea", wide: true },
+  ] },
+  materials: { title: "materiale", fields: [
+    { k: "name", l: "Materiale", t: "text", req: true, wide: true },
+    { k: "unit", l: "Unità di misura", t: "list", opts: () => ["m²", "m³", "m", "kg", "l", "pz", "tavola"], def: "pz", req: true },
+    { k: "cost", l: "Costo per unità (€)", t: "number", def: 0 },
+    { k: "qty", l: "Giacenza attuale", t: "number", def: 0 },
+    { k: "minQty", l: "Scorta minima", t: "number", def: 0 },
+    { k: "supplier", l: "Fornitore", t: "text", wide: true },
+  ] },
+  transactions: { title: "movimento", fields: [
+    { k: "description", l: "Descrizione", t: "text", req: true, wide: true },
+    { k: "type", l: "Tipo", t: "select", opts: () => [["entrata", "Incasso"], ["uscita", "Spesa"]], def: "entrata" },
+    { k: "amount", l: "Importo (€)", t: "number", req: true },
+    { k: "date", l: "Data", t: "date", req: true, def: todayISO },
+    { k: "status", l: "Stato", t: "select", opts: () => [["pagato", "Pagato / incassato"], ["in attesa", "In attesa"]], def: "pagato" },
+    { k: "category", l: "Categoria", t: "list", opts: () => CATEGORIES },
+    { k: "contactId", l: "Cliente", t: "select", opts: contactOpts },
+  ] },
+  settings: { title: "impostazioni bottega", fields: [
+    { k: "name", l: "Nome della bottega", t: "text", req: true },
+    { k: "craft", l: "Mestiere", t: "text" },
+    { k: "rate", l: "Tariffa oraria (€)", t: "number" },
+    { k: "overhead", l: "Spese di bottega (%)", t: "number" },
+    { k: "margin", l: "Margine desiderato (%)", t: "number" },
+    { k: "vat", l: "IVA (%)", t: "number" },
+    { k: "recontactDays", l: "Ricontatta dopo (giorni)", t: "number", help: "Clienti senza lavori da più giorni di così compaiono in Panoramica." },
+  ] },
+};
+function contactOpts() { return [["", "— Nessuno —"], ...all("contacts").sort((a, b) => a.name.localeCompare(b.name, "it")).map(c => [c.id, c.name])]; }
+
+function openForm(col, id, preset) {
+  const sch = SCHEMA[col]; const rec = col === "settings" ? cfg() : id ? state[col].get(id) : null;
+  const ro = !canWrite;
+  const val = f => rec ? (rec[f.k] ?? "") : preset && f.k in preset ? preset[f.k] : (typeof f.def === "function" ? f.def() : f.def ?? "");
+  const fields = sch.fields.map(f => {
+    const v = val(f); const fid = `f_${col}_${f.k}`; const dis = ro ? "disabled" : "";
+    let input;
+    if (f.t === "select") input = `<select id="${fid}" name="${f.k}" ${dis}>${f.opts().map(([ov, ol]) => `<option value="${esc(ov)}" ${String(v) === String(ov) ? "selected" : ""}>${esc(ol)}</option>`).join("")}</select>`;
+    else if (f.t === "textarea") input = `<textarea id="${fid}" name="${f.k}" ${dis}>${esc(v)}</textarea>`;
+    else if (f.t === "list") input = `<input id="${fid}" name="${f.k}" list="${fid}_l" value="${esc(v)}" ${dis}><datalist id="${fid}_l">${f.opts().map(o => `<option value="${esc(o)}">`).join("")}</datalist>`;
+    else input = `<input id="${fid}" name="${f.k}" type="${f.t}" ${f.t === "number" ? 'step="0.01" min="0" inputmode="decimal"' : ""} value="${esc(v)}" ${f.req ? "required" : ""} ${dis}>`;
+    return `<div class="field ${f.wide ? "wide" : ""}"><label for="${fid}">${f.l}${f.req ? " *" : ""}</label>${input}${f.help ? `<span class="help">${f.help}</span>` : ""}</div>`;
+  }).join("");
+  let related = "";
+  if (col === "contacts" && id) {
+    const ds = all("deals").filter(d => d.contactId === id), os = all("orders").filter(o => o.contactId === id), ts = all("transactions").filter(t => t.contactId === id);
+    if (ds.length || os.length || ts.length) related = `<div class="related"><span class="label">Storia con la bottega</span>
+      ${ds.map(d => `<div>Richiesta · ${esc(d.title)} · <span class="num">${eur.format(n(d.value))}</span> · ${DSTAGE[d.stage].label}</div>`).join("")}
+      ${os.map(o => `<div>Commessa · ${esc(o.title)} · <span class="num">${eur.format(n(o.price))}</span> · ${OSTAGE[o.stage].label}</div>`).join("")}
+      ${ts.map(t => `<div>${fmtDay(t.date)} · ${esc(t.description)} · <span class="num">${t.type === "entrata" ? "+" : "−"}${eur.format(n(t.amount))}</span></div>`).join("")}</div>`;
+  }
+  if (col === "orders" && id) {
+    const e = orderEconomics(rec);
+    related = `<div class="related"><span class="label">Conto della commessa</span>
+      <div>Costo reale finora: <span class="num">${eur2.format(e.cost)}</span> (materiali + ${qty.format(n(rec.hoursDone))} h × ${eur.format(cfg().rate)})</div>
+      <div>Margine reale: <span class="num ${e.margin < 0 ? "neg-t" : "pos-t"}">${eur2.format(e.margin)}</span> ${marginPill(e.pct)}</div>
+      <div>Ancora da incassare: <span class="num">${rec.settled ? "saldato" : eur2.format(e.due)}</span></div></div>`;
+  }
+  const form = document.getElementById("dlgForm");
+  const heading = col === "settings" ? "Impostazioni bottega" : ro ? cap(sch.title) : (id ? "Modifica " : "Nuova ").replace("Nuova ", ["cliente", "movimento", "materiale"].includes(sch.title) ? "Nuovo " : "Nuova ") + sch.title;
+  form.innerHTML = `<h2>${heading}</h2>
+    <div class="fields">${fields}</div>${related}
+    <p id="formErr" class="neg-t" hidden></p>
+    <div class="dlg-foot"><div>${id && !ro && col !== "settings" ? `<button type="button" class="btn danger" id="delBtn">Elimina</button>` : ""}</div>
+    <div class="actions"><button type="button" class="btn" id="cancelBtn">${ro ? "Chiudi" : "Annulla"}</button>${ro ? "" : `<button type="submit" class="btn primary">${id ? "Salva modifiche" : "Aggiungi"}</button>`}</div></div>`;
+  const dlg = document.getElementById("dlg");
+  const showErr = msg => { const e = document.getElementById("formErr"); e.textContent = msg; e.hidden = false; };
+  form.onsubmit = async ev => {
+    ev.preventDefault();
+    const data = {};
+    for (const f of sch.fields) {
+      let v = form.elements[f.k].value.trim();
+      if (f.req && !v) { showErr(`Compila il campo «${f.l}».`); form.elements[f.k].focus(); return; }
+      if (f.t === "number") { v = v === "" ? 0 : parseFloat(v.replace(",", ".")); if (!isFinite(v) || v < 0) { showErr(`«${f.l}» deve essere un numero positivo.`); return; } }
+      data[f.k] = v;
+    }
+    if (rec && rec.esempio) data.esempio = false;
+    let ok;
+    if (col === "settings") ok = await write(() => store.set("settings", "bottega", { ...(state.settings.get("bottega") || {}), ...data }), "Impostazioni salvate");
+    else if (id) ok = await write(() => store.update(col, id, data), "Modifiche salvate");
+    else ok = await write(() => store.add(col, { ...data, ...(preset && preset._extra || {}), createdAt: new Date().toISOString() }), `${cap(sch.title)} aggiunt${["cliente", "movimento", "materiale"].includes(sch.title) ? "o" : "a"}`);
+    if (ok) dlg.close();
+  };
+  document.getElementById("cancelBtn").onclick = () => dlg.close();
+  const del = document.getElementById("delBtn");
+  if (del) del.onclick = async () => {
+    if (!del.classList.contains("armed")) { del.classList.add("armed"); del.textContent = "Conferma eliminazione"; return; }
+    if (await write(() => store.remove(col, id), "Eliminato")) dlg.close();
+  };
+  dlg.showModal();
+}
+
+/* ---------- Azioni ---------- */
+async function toLab(dealId) {
+  const d = state.deals.get(dealId); if (!d) return;
+  const order = { title: d.title, contactId: d.contactId || "", stage: "coda", price: n(d.value), deposit: 0, dueDate: "", materialsCost: n(d.materialsCost), hoursEst: n(d.hoursEst), hoursDone: 0, notes: d.notes || "", dealId, createdAt: new Date().toISOString() };
+  let ref;
+  if (!await write(async () => { ref = await store.add("orders", order); })) return;
+  await write(() => store.update("deals", dealId, { orderId: ref && ref.id || "si" }), "Commessa aperta in laboratorio");
+}
+async function settle(orderId) {
+  const o = state.orders.get(orderId); if (!o) return;
+  const due = orderEconomics(o).due;
+  if (!await write(() => store.add("transactions", { description: `Saldo · ${o.title}`, type: "entrata", amount: due, date: todayISO(), status: "pagato", category: "Vendite su misura", contactId: o.contactId || "", createdAt: new Date().toISOString() }))) return;
+  await write(() => store.update("orders", orderId, { settled: true, paidBalance: due }), `Saldo di ${eur.format(due)} registrato in cassa`);
+}
+
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("[data-new],[data-markpaid],[data-cstatus],[data-ftype],[data-tolab],[data-settle],[data-hours],[data-stock],[data-qdel],[data-settings],#clearExamples,#qAdd,#qReset,#qSave,#qDefaults,[data-edit]");
+  if (!t) return;
+  if (t.dataset.new) return openForm(t.dataset.new);
+  if (t.dataset.settings) return openForm("settings", "bottega");
+  if (t.dataset.markpaid) return write(() => store.update("transactions", t.dataset.markpaid, { status: "pagato" }), "Segnato come pagato");
+  if (t.dataset.cstatus) { ui.contactStatus = t.dataset.cstatus; return render(); }
+  if (t.dataset.ftype) { ui.finType = t.dataset.ftype; return render(); }
+  if (t.dataset.tolab) return toLab(t.dataset.tolab);
+  if (t.dataset.settle) return settle(t.dataset.settle);
+  if (t.dataset.hours) { const o = state.orders.get(t.dataset.hours); return o && write(() => store.update("orders", t.dataset.hours, { hoursDone: n(o.hoursDone) + n(t.dataset.delta) }), `${qty.format(n(o.hoursDone) + 1)} ore segnate`); }
+  if (t.dataset.stock) { const m = state.materials.get(t.dataset.stock); return m && write(() => store.update("materials", t.dataset.stock, { qty: Math.max(0, n(m.qty) + n(t.dataset.delta)) })); }
+  if (t.dataset.qdel) { ui.quote.rows.splice(+t.dataset.qdel, 1); if (!ui.quote.rows.length) ui.quote.rows.push({ mat: "", q: 1 }); return render(); }
+  if (t.id === "qAdd") { ui.quote.rows.push({ mat: "", q: 1 }); return render(); }
+  if (t.id === "qReset") { ui.quote = freshQuote(); return render(); }
+  if (t.id === "qDefaults") { const q = ui.quote; return write(() => store.set("settings", "bottega", { ...(state.settings.get("bottega") || {}), rate: n(q.rate), overhead: n(q.overhead), margin: n(q.margin), vat: n(q.vat) }), "Tariffe salvate come predefinite"); }
+  if (t.id === "qSave") {
+    const q = ui.quote, r = quoteCalc(q);
+    if (!q.title.trim()) { toast("Dai un nome al lavoro prima di creare la richiesta."); document.getElementById("q_title").focus(); return; }
+    const ok = await write(() => store.add("deals", { title: q.title.trim(), contactId: q.contactId, value: Math.round(r.net), stage: "preventivo", closeDate: "", hoursEst: n(q.hours), materialsCost: Math.round(r.mats * 100) / 100, notes: `Preventivo: netto ${eur2.format(r.net)}, IVA inclusa ${eur2.format(r.total)}. Costo pieno ${eur2.format(r.cost)}.`, createdAt: new Date().toISOString() }), "Richiesta creata in «Preventivo inviato»");
+    if (ok) { ui.quote = freshQuote(); location.hash = "richieste"; }
+    return;
+  }
+  if (t.id === "clearExamples") {
+    if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Conferma: elimina gli esempi"; return; }
+    for (const col of DATA_COLS) for (const r of all(col).filter(x => x.esempio)) if (!await write(() => store.remove(col, r.id))) return;
+    return toast("Esempi rimossi");
+  }
+  if (t.dataset.edit) return openForm(t.dataset.edit, t.dataset.id);
+});
+function onQuoteInput(el) {
+  const q = ui.quote; if (!q) return false;
+  if (el.dataset.q) { q[el.dataset.q] = el.type === "number" ? el.value : el.value; }
+  else if (el.dataset.qrow != null) {
+    const i = +el.dataset.qrow; q.rows[i][el.dataset.k] = el.value;
+    const m = state.materials.get(q.rows[i].mat); const line = document.getElementById(`q_line_${i}`);
+    if (line) line.textContent = m ? eur2.format(n(m.cost) * n(q.rows[i].q)) : "—";
+  } else return false;
+  const rc = document.getElementById("receipt"); if (rc) rc.innerHTML = receiptHTML();
+  return true;
+}
+document.addEventListener("input", ev => {
+  if (ev.target.id === "cq") { ui.contactQuery = ev.target.value; render(); return; }
+  onQuoteInput(ev.target);
+});
+document.addEventListener("change", ev => {
+  if (ev.target.id === "fm") { ui.finMonth = ev.target.value; render(); return; }
+  onQuoteInput(ev.target);
+});
+
+let drag = null;
+document.addEventListener("dragstart", ev => {
+  const c = ev.target.closest && ev.target.closest(".card"); if (!c || !canWrite) return;
+  drag = { id: c.dataset.id, col: c.dataset.edit }; c.classList.add("drag"); ev.dataTransfer.effectAllowed = "move"; ev.dataTransfer.setData("text/plain", drag.id);
+});
+document.addEventListener("dragend", () => { drag = null; document.querySelectorAll(".drag,.over").forEach(e => e.classList.remove("drag", "over")); });
+document.addEventListener("dragover", ev => {
+  const col = ev.target.closest && ev.target.closest(".col"); if (!col || !drag) return;
+  ev.preventDefault(); document.querySelectorAll(".col.over").forEach(e => e !== col && e.classList.remove("over")); col.classList.add("over");
+});
+document.addEventListener("drop", ev => {
+  const col = ev.target.closest && ev.target.closest(".col"); if (!col || !drag) return;
+  ev.preventDefault();
+  const { id, col: c } = drag, stage = col.dataset.stage, rec = state[c].get(id);
+  if (rec && rec.stage !== stage) {
+    const label = (c === "deals" ? DSTAGE : OSTAGE)[stage].label;
+    write(() => store.update(c, id, { stage }), `Spostata in «${label}»`);
+  }
+});
+
+function route() {
+  const h = location.hash.slice(1);
+  view = h in VIEWS ? h : "panoramica";
+  render();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+
+/* ---------- Avvio ---------- */
+async function boot() {
+  route();
+  let db = null, user = null;
+  if (window.claude && typeof window.claude.use === "function") {
+    try { [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]); } catch (e) {}
+  }
+  if (user && db) { try { if (await user.can("data.write") === false) canWrite = false; } catch (e) {} }
+  store = db ? dbStore(db) : localStore();
+  document.getElementById("modeDot").classList.toggle("on", !!db);
+  document.getElementById("modeText").textContent = db ? (canWrite ? "Dati sincronizzati" : "Sola lettura") : "Demo: le modifiche restano in questo browser";
+  store.start();
+}
+boot();
+</script>
+
+</body>
+</html>
