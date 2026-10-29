@@ -34,7 +34,3 @@ HTML, CSS e JavaScript senza framework, in un unico file. Grafico in SVG disegna
 - Ogni testo inserito dall'utente viene neutralizzato prima di essere mostrato (protezione da XSS); date e fasi vengono validate, e un dato malformato non blocca la pagina.
 - Content-Security-Policy restrittiva: la pagina non può caricare script esterni né inviare dati ad altri siti.
 - Impaginazione verificata da 320 px (telefoni piccoli) fino a desktop, senza sovrapposizioni né scorrimento laterale.
-
-## Come è stato realizzato
-
-Ho definito il progetto, il dominio e i requisiti, e ho guidato le revisioni. Il codice è stato scritto con Claude Code, un assistente di programmazione basato sull'intelligenza artificiale.
