@@ -2,7 +2,9 @@
 
 Gestionale web per una bottega artigiana: dalla prima richiesta del cliente alla consegna del pezzo e all'incasso.
 
-**Demo:** apri `index.html` o la pagina GitHub Pages del repository. I dati sono fittizi (una falegnameria immaginaria) e le modifiche restano solo nel tuo browser.
+**▶ Prova la demo: [rosariosapienza12.github.io/bottega-crm-demo](https://rosariosapienza12.github.io/bottega-crm-demo/)**
+
+I dati sono fittizi (una falegnameria immaginaria) e le modifiche restano solo nel tuo browser. Il pulsante "Ripristina dati demo" riporta tutto allo stato iniziale. Funziona da computer e da telefono, con tema chiaro e scuro.
 
 ## Funzioni
 
@@ -25,6 +27,13 @@ Gestionale web per una bottega artigiana: dalla prima richiesta del cliente alla
 ## Tecnologie
 
 HTML, CSS e JavaScript senza framework, in un unico file. Grafico in SVG disegnato a mano, tema chiaro e scuro con variabili CSS, layout responsive con Grid e Flexbox. I dati passano da un adattatore con due archivi intercambiabili: database cloud oppure `localStorage` del browser.
+
+## Test e sicurezza
+
+- Prove funzionali su tutte le aree: validazione dei moduli, calcoli del preventivo verificati a mano, passaggio richiesta → commessa → incasso, conferma prima di ogni eliminazione.
+- Ogni testo inserito dall'utente viene neutralizzato prima di essere mostrato (protezione da XSS); date e fasi vengono validate, e un dato malformato non blocca la pagina.
+- Content-Security-Policy restrittiva: la pagina non può caricare script esterni né inviare dati ad altri siti.
+- Impaginazione verificata da 320 px (telefoni piccoli) fino a desktop, senza sovrapposizioni né scorrimento laterale.
 
 ## Come è stato realizzato
 

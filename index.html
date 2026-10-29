@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
+<meta name="description" content="Gestionale web per una bottega artigiana: richieste, preventivatore, laboratorio con margine reale, magazzino, clienti e cassa. Demo con dati fittizi.">
+<meta name="theme-color" content="#2B2833">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Bottega CRM">
+<meta property="og:description" content="Gestionale web per una bottega artigiana: dalla richiesta del cliente alla consegna e all'incasso, con il margine reale di ogni lavoro.">
+<meta property="og:url" content="https://rosariosapienza12.github.io/bottega-crm-demo/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%235B3FA8'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='Georgia,serif' font-size='32' fill='%23fff'%3EB%3C/text%3E%3C/svg%3E">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -214,18 +221,25 @@ dialog::backdrop { background: rgba(10,12,18,.45); }
 
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 500; z-index: 50; max-width: calc(100vw - 32px); }
 
-@media (max-width: 1180px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .grid2, .grid3, .quote { grid-template-columns: minmax(0, 1fr); } .receipt { position: static; } }
+@media (max-width: 1180px) { .kpis:not(.four) { grid-template-columns: repeat(6, minmax(0, 1fr)); } .kpis:not(.four) > .kpi { grid-column: span 2; } .kpis:not(.four) > .kpi:nth-child(n+4) { grid-column: span 3; } .grid2, .grid3, .quote { grid-template-columns: minmax(0, 1fr); } .receipt { position: static; } }
 @media (max-width: 760px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   .side { position: sticky; top: env(safe-area-inset-top, 0px); height: auto; z-index: 5; flex-direction: row; align-items: center; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 12px; overflow-x: auto; }
   .nav a[aria-current="page"] { border-left-color: transparent; border-radius: 8px; box-shadow: inset 0 -2px 0 var(--brass); }
   body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--side-bg); }
-  .brand b, .side-foot, .nav-sep, .nav .badge { display: none; }
+  .brand b, .side-foot .mode, .nav-sep, .nav .badge { display: none; }
+  .side-foot { display: flex; flex-direction: row; flex: none; margin: 0; padding: 0; gap: 6px; }
+  .kpis > .kpi, .kpis:not(.four) > .kpi, .kpis:not(.four) > .kpi:nth-child(n+4) { grid-column: auto; }
+  input, select, textarea { font-size: 16px !important; }
+  .btn { min-height: 40px; }
+  .btn.small { min-height: 34px; padding: 6px 12px; }
+  dialog { max-height: calc(100dvh - 24px); }
+  .dlg { max-height: calc(100dvh - 26px); }
   .brand { padding: 0; flex: none; }
   .nav { flex-direction: row; flex: none; gap: 0; }
   .nav a { padding: 8px 10px; white-space: nowrap; flex: none; }
   .side { gap: 8px; scrollbar-width: none; }
-  .kpis > .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .kpis > .kpi:last-child:nth-child(odd), .kpis:not(.four) > .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .row .r { max-width: 55%; }
   .row .r .pill { white-space: normal; text-align: right; line-height: 1.3; }
   .head > div:first-child { min-width: 0; }
@@ -267,6 +281,7 @@ dialog::backdrop { background: rgba(10,12,18,.45); }
     </nav>
     <div class="side-foot">
       <button type="button" class="btn small" data-settings="1">Impostazioni bottega</button>
+      <button type="button" class="btn small" id="resetDemo" hidden>Ripristina dati demo</button>
       <span class="mode"><i class="dot" id="modeDot"></i><span id="modeText">Connessione…</span></span>
     </div>
   </aside>
@@ -430,6 +445,7 @@ function localStore() {
   return {
     mode: "local",
     start() { COLS.forEach(emit); },
+    reset() { data = JSON.parse(JSON.stringify(DEMO)); save(); COLS.forEach(emit); },
     async add(col, d) { const id = uid(); data[col][id] = d; save(); emit(col); return { id }; },
     async set(col, id, d) { data[col][id] = d; save(); emit(col); },
     async update(col, id, d) { data[col][id] = { ...data[col][id], ...d }; save(); emit(col); },
@@ -596,7 +612,7 @@ function compact(v) { return v >= 1000 ? (v / 1000).toLocaleString("it-IT", { ma
 /* ---------- Richieste ---------- */
 function viewDeals() {
   const deals = all("deals");
-  return head("Richieste", canWrite ? "Dal primo contatto alla conferma. Trascina una scheda per cambiarne la fase; quando è confermata, portala in laboratorio." : "Le richieste dei clienti divise per fase.", addBtn("deals", "Richiesta")) + exampleNotice() + `
+  return head("Richieste", canWrite ? "Dal primo contatto alla conferma. Trascina una scheda per cambiarne la fase (da telefono aprila e scegli la fase); quando è confermata, portala in laboratorio." : "Le richieste dei clienti divise per fase.", addBtn("deals", "Richiesta")) + exampleNotice() + `
   <div class="board-wrap"><div class="board" data-board="deals">${DEAL_STAGES.map(s => {
     const items = deals.filter(d => d.stage === s.id).sort((a, b) => (a.closeDate || "9").localeCompare(b.closeDate || "9"));
     const sum = items.reduce((a, d) => a + n(d.value), 0);
@@ -622,12 +638,13 @@ function freshQuote() {
   return { title: "", contactId: "", rows: [{ mat: "", q: 1 }], extra: 0, hours: 8, rate: c.rate, overhead: c.overhead, margin: c.margin, vat: c.vat };
 }
 function quoteCalc(q) {
-  const mats = q.rows.reduce((s, r) => { const m = state.materials.get(r.mat); return s + (m ? n(m.cost) * n(r.q) : 0); }, 0) + n(q.extra);
-  const labour = n(q.hours) * n(q.rate);
-  const overhead = (mats + labour) * n(q.overhead) / 100;
+  const p = v => { const x = n(v); return isFinite(x) && x > 0 ? x : 0; };
+  const mats = q.rows.reduce((s, r) => { const m = state.materials.get(r.mat); return s + (m ? p(m.cost) * p(r.q) : 0); }, 0) + p(q.extra);
+  const labour = p(q.hours) * p(q.rate);
+  const overhead = (mats + labour) * p(q.overhead) / 100;
   const cost = mats + labour + overhead;
-  const net = cost * (1 + n(q.margin) / 100);
-  const vat = net * n(q.vat) / 100;
+  const net = cost * (1 + p(q.margin) / 100);
+  const vat = net * p(q.vat) / 100;
   return { mats, labour, overhead, cost, profit: net - cost, net, vat, total: net + vat };
 }
 function viewQuote() {
@@ -963,7 +980,7 @@ async function settle(orderId) {
 }
 
 document.addEventListener("click", async ev => {
-  const t = ev.target.closest("[data-new],[data-markpaid],[data-cstatus],[data-ftype],[data-tolab],[data-settle],[data-hours],[data-stock],[data-qdel],[data-settings],#clearExamples,#qAdd,#qReset,#qSave,#qDefaults,[data-edit]");
+  const t = ev.target.closest("[data-new],[data-markpaid],[data-cstatus],[data-ftype],[data-tolab],[data-settle],[data-hours],[data-stock],[data-qdel],[data-settings],#resetDemo,#qAdd,#qReset,#qSave,#qDefaults,[data-edit]");
   if (!t) return;
   if (t.dataset.new) return openForm(t.dataset.new);
   if (t.dataset.settings) return openForm("settings", "bottega");
@@ -985,10 +1002,11 @@ document.addEventListener("click", async ev => {
     if (ok) { ui.quote = freshQuote(); location.hash = "richieste"; }
     return;
   }
-  if (t.id === "clearExamples") {
-    if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Conferma: elimina gli esempi"; return; }
-    for (const col of DATA_COLS) for (const r of all(col).filter(x => x.esempio)) if (!await write(() => store.remove(col, r.id))) return;
-    return toast("Esempi rimossi");
+  if (t.id === "resetDemo") {
+    if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Conferma ripristino"; return; }
+    t.classList.remove("armed"); t.textContent = "Ripristina dati demo";
+    store.reset(); ui.quote = null;
+    return toast("Dati demo ripristinati");
   }
   if (t.dataset.edit) return openForm(t.dataset.edit, t.dataset.id);
 });
@@ -1050,6 +1068,7 @@ async function boot() {
   if (user && db) { try { if (await user.can("data.write") === false) canWrite = false; } catch (e) {} }
   store = db ? dbStore(db) : localStore();
   document.getElementById("modeDot").classList.toggle("on", !!db);
+  document.getElementById("resetDemo").hidden = !!db;
   document.getElementById("modeText").textContent = db ? (canWrite ? "Dati sincronizzati" : "Sola lettura") : "Demo: le modifiche restano in questo browser";
   store.start();
 }
