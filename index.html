@@ -281,6 +281,10 @@ dialog::backdrop { background: rgba(10,12,18,.45); }
     </nav>
     <div class="side-foot">
       <button type="button" class="btn small" data-settings="1">Impostazioni bottega</button>
+      <button type="button" class="btn small" id="backupExport">Scarica backup</button>
+      <button type="button" class="btn small" id="backupImport">Ripristina da backup</button>
+      <input type="file" id="backupFile" accept="application/json,.json" hidden>
+      <small id="backupInfo"></small>
       <button type="button" class="btn small" id="resetDemo" hidden>Ripristina dati demo</button>
       <span class="mode"><i class="dot" id="modeDot"></i><span id="modeText">Connessione…</span></span>
     </div>
@@ -446,6 +450,11 @@ function localStore() {
     mode: "local",
     start() { COLS.forEach(emit); },
     reset() { data = JSON.parse(JSON.stringify(DEMO)); save(); COLS.forEach(emit); },
+    // Replaces everything with a checked backup; the previous data stays in a second key, just in case.
+    replace(next) {
+      try { localStorage.setItem("bottega-crm-prima-del-ripristino", JSON.stringify(data)); } catch (e) {}
+      data = next; save(); COLS.forEach(emit);
+    },
     async add(col, d) { const id = uid(); data[col][id] = d; save(); emit(col); return { id }; },
     async set(col, id, d) { data[col][id] = d; save(); emit(col); },
     async update(col, id, d) { data[col][id] = { ...data[col][id], ...d }; save(); emit(col); },
@@ -461,6 +470,76 @@ async function write(fn, okMsg) {
     else toast("Salvataggio non riuscito. Riprova tra poco.");
     return false;
   }
+}
+
+/* ---------- Backup: un file sul computer, perché i dati vivono solo in questo browser ---------- */
+const BACKUP_KIND = "bottega-crm-backup";
+const MAX_BACKUP_BYTES = 4 * 1024 * 1024;
+const LAST_BACKUP_KEY = "bottega-crm-ultimo-backup";
+
+function showBackupInfo() {
+  let last = null;
+  try { last = localStorage.getItem(LAST_BACKUP_KEY); } catch (e) {}
+  const el = document.getElementById("backupInfo");
+  if (!el) return;
+  if (!last) { el.textContent = "Nessun backup ancora"; return; }
+  const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+  el.textContent = days < 1 ? "Ultimo backup: oggi" : days === 1 ? "Ultimo backup: ieri" : `Ultimo backup: ${days} giorni fa`;
+}
+
+function exportBackup() {
+  const data = Object.fromEntries(COLS.map(c => [c, Object.fromEntries(state[c])]));
+  const payload = { kind: BACKUP_KIND, version: 1, exportedAt: new Date().toISOString(), data };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `bottega-crm-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  try { localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString()); } catch (e) {}
+  showBackupInfo();
+  toast("Backup scaricato: conservalo in un posto sicuro (chiavetta, Drive, email)");
+}
+
+/**
+ * Checks a backup before it replaces anything: the right kind of file, only the known
+ * collections, records made of plain text, numbers and yes/no values. Anything else
+ * (another JSON, a damaged file, keys that could alter objects) is refused as a whole.
+ */
+function parseBackup(text) {
+  let p;
+  try { p = JSON.parse(text); } catch (e) { return null; }
+  if (!p || typeof p !== "object" || p.kind !== BACKUP_KIND || p.version !== 1 || !p.data || typeof p.data !== "object") return null;
+  const FORBIDDEN = new Set(["__proto__", "constructor", "prototype"]);
+  const out = {};
+  for (const col of COLS) {
+    const records = p.data[col] === undefined ? {} : p.data[col];
+    if (!records || typeof records !== "object" || Array.isArray(records)) return null;
+    out[col] = {};
+    for (const [id, rec] of Object.entries(records)) {
+      if (FORBIDDEN.has(id) || !/^[\w-]{1,64}$/.test(id) || !rec || typeof rec !== "object" || Array.isArray(rec)) return null;
+      const clean = {};
+      for (const [k, v] of Object.entries(rec)) {
+        if (FORBIDDEN.has(k) || !/^[A-Za-z]\w{0,40}$/.test(k)) return null;
+        if (typeof v === "string") clean[k] = v.slice(0, 5000);
+        else if (typeof v === "number" && Number.isFinite(v)) clean[k] = v;
+        else if (typeof v === "boolean" || v === null) clean[k] = v;
+        else return null;
+      }
+      out[col][id] = clean;
+    }
+  }
+  return out;
+}
+
+async function importBackup(file) {
+  if (!file) return;
+  if (file.size > MAX_BACKUP_BYTES) return toast("File troppo grande per essere un backup di Bottega CRM.");
+  const data = parseBackup(await file.text());
+  if (!data) return toast("Questo file non è un backup valido di Bottega CRM: nessun dato è stato cambiato.");
+  store.replace(data); ui.quote = null;
+  const count = DATA_COLS.reduce((s, c) => s + Object.keys(data[c]).length, 0);
+  toast(`Backup ripristinato: ${count} schede caricate`);
 }
 
 /* ---------- Calcoli ---------- */
@@ -980,7 +1059,7 @@ async function settle(orderId) {
 }
 
 document.addEventListener("click", async ev => {
-  const t = ev.target.closest("[data-new],[data-markpaid],[data-cstatus],[data-ftype],[data-tolab],[data-settle],[data-hours],[data-stock],[data-qdel],[data-settings],#resetDemo,#qAdd,#qReset,#qSave,#qDefaults,[data-edit]");
+  const t = ev.target.closest("[data-new],[data-markpaid],[data-cstatus],[data-ftype],[data-tolab],[data-settle],[data-hours],[data-stock],[data-qdel],[data-settings],#resetDemo,#backupExport,#backupImport,#qAdd,#qReset,#qSave,#qDefaults,[data-edit]");
   if (!t) return;
   if (t.dataset.new) return openForm(t.dataset.new);
   if (t.dataset.settings) return openForm("settings", "bottega");
@@ -1001,6 +1080,13 @@ document.addEventListener("click", async ev => {
     const ok = await write(() => store.add("deals", { title: q.title.trim(), contactId: q.contactId, value: Math.round(r.net), stage: "preventivo", closeDate: "", hoursEst: n(q.hours), materialsCost: Math.round(r.mats * 100) / 100, notes: `Preventivo: netto ${eur2.format(r.net)}, IVA inclusa ${eur2.format(r.total)}. Costo pieno ${eur2.format(r.cost)}.`, createdAt: new Date().toISOString() }), "Richiesta creata in «Preventivo inviato»");
     if (ok) { ui.quote = freshQuote(); location.hash = "richieste"; }
     return;
+  }
+  if (t.id === "backupExport") return exportBackup();
+  if (t.id === "backupImport") {
+    // Two clicks, like the demo reset: restoring replaces every record.
+    if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Conferma: sostituisci i dati"; return; }
+    t.classList.remove("armed"); t.textContent = "Ripristina da backup";
+    return document.getElementById("backupFile").click();
   }
   if (t.id === "resetDemo") {
     if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "Conferma ripristino"; return; }
@@ -1027,6 +1113,7 @@ document.addEventListener("input", ev => {
 });
 document.addEventListener("change", ev => {
   if (ev.target.id === "fm") { ui.finMonth = ev.target.value; render(); return; }
+  if (ev.target.id === "backupFile") { const f = ev.target.files && ev.target.files[0]; ev.target.value = ""; importBackup(f); return; }
   onQuoteInput(ev.target);
 });
 
@@ -1069,6 +1156,9 @@ async function boot() {
   store = db ? dbStore(db) : localStore();
   document.getElementById("modeDot").classList.toggle("on", !!db);
   document.getElementById("resetDemo").hidden = !!db;
+  // With cloud sync the data is already safe; the file backup is for the browser-only mode.
+  ["backupImport", "backupInfo"].forEach(id => { document.getElementById(id).hidden = !!db; });
+  showBackupInfo();
   document.getElementById("modeText").textContent = db ? (canWrite ? "Dati sincronizzati" : "Sola lettura") : "Demo: le modifiche restano in questo browser";
   store.start();
 }

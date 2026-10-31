@@ -17,6 +17,7 @@ I dati sono fittizi (una falegnameria immaginaria) e le modifiche restano solo n
 | Magazzino | Giacenze, scorta minima, avviso di riordino, valore del magazzino |
 | Clienti | Gusti, misure, ricorrenze, storico di richieste, commesse e pagamenti |
 | Cassa | Incassi e spese per mese, categoria e stato |
+| Backup | Scarica tutti i dati in un file e li ripristina, con doppia conferma e una copia dei dati precedenti |
 
 ## Regole di calcolo principali
 
@@ -32,5 +33,6 @@ HTML, CSS e JavaScript senza framework, in un unico file. Grafico in SVG disegna
 
 - Prove funzionali su tutte le aree: validazione dei moduli, calcoli del preventivo verificati a mano, passaggio richiesta → commessa → incasso, conferma prima di ogni eliminazione.
 - Ogni testo inserito dall'utente viene neutralizzato prima di essere mostrato (protezione da XSS); date e fasi vengono validate, e un dato malformato non blocca la pagina.
+- Backup e ripristino: il file viene accettato solo se è un backup di Bottega CRM con schede di testo, numeri e valori sì/no; un file manomesso o di altro tipo viene rifiutato per intero, senza toccare i dati.
 - Content-Security-Policy restrittiva: la pagina non può caricare script esterni né inviare dati ad altri siti.
 - Impaginazione verificata da 320 px (telefoni piccoli) fino a desktop, senza sovrapposizioni né scorrimento laterale.
